@@ -34,6 +34,7 @@ for BIN_DIR in "$PREFIX/bin" "$HOME/.local/bin"; do
   printf '#!/data/data/com.termux/files/usr/bin/bash\nexec bash "%s/gvoice" "$@"\n' "$INSTALL_DIR" > "$BIN_DIR/gvoice.new"
   chmod +x "$BIN_DIR/gvoice.new"
   mv -f "$BIN_DIR/gvoice.new" "$BIN_DIR/gvoice"
+  cp -f "$BIN_DIR/gvoice" "$BIN_DIR/gvoices.new" && mv -f "$BIN_DIR/gvoices.new" "$BIN_DIR/gvoices"   # both spellings
 done
 
 echo ""

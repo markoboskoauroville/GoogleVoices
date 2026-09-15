@@ -38,6 +38,7 @@ rm -f "$BIN_DIR/gvoice.new"
 printf '#!/usr/bin/env bash\nexec bash "%s/gvoice" "$@"\n' "$INSTALL_DIR" > "$BIN_DIR/gvoice.new"
 chmod +x "$BIN_DIR/gvoice.new"
 mv -f "$BIN_DIR/gvoice.new" "$BIN_DIR/gvoice"
+cp -f "$BIN_DIR/gvoice" "$BIN_DIR/gvoices.new" && mv -f "$BIN_DIR/gvoices.new" "$BIN_DIR/gvoices"   # both spellings (Marko typed gvoices, 15.9.2026)
 
 echo ""
 if [[ ":$PATH:" != *":$BIN_DIR:"* ]]; then

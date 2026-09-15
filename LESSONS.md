@@ -16,4 +16,8 @@
 6. **Hear it through BlackHole.** The Mac's output is BlackHole 2ch; `ffmpeg -f avfoundation -i ":BlackHole 2ch"`
    records what the browser plays, and volumedetect and silencedetect turn it into numbers: silence until the press,
    −21.8 dB peak while the voice spoke, silence after. That is the test of the sound, not of the file.
+7. **"I hear nothing" was the Mac's output, not the app.** (15.9.2026) The default output was BlackHole 2ch, the
+   virtual cable I had used to record the proof; a cable records fine and plays nothing. `SwitchAudioSource -c`
+   first, always, before a word about the player. And the difference between my test and his ear was exactly that:
+   I recorded the cable, he listened to it.
 

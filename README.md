@@ -21,7 +21,7 @@ macOS or Linux terminal:
 
     curl -fsSL https://raw.githubusercontent.com/markoboskoauroville/GoogleVoices/main/install-terminal.sh | bash
 
-Then `gvoice`. The page opens in the browser (Chrome on the phone). In the terminal: **q** quit,
+Then `gvoice` (or `gvoices`, both work). The page opens in the browser (Chrome on the phone). In the terminal: **q** quit,
 **o** open the page again, **u** check for an update (shows installed and available, `y` pulls and
 restarts on the same port), **r** restart. `gvoice update` pulls without starting. Both install lines
 also stand at the top of the page, each with a COPY button.
@@ -106,3 +106,10 @@ the walk watched, the voice arrived in 6 s; then the archive's deck was played w
 Mac's BlackHole output: silence until the press, then the voice at −21.8 dB peak with the sentence's own
 pauses. The muted colours he saw were Dark Reader recolouring the page; the page now carries
 `<meta name="darkreader-lock">`, and the deck's glyphs are inline SVG, which no extension repaints.
+
+## No sound?
+
+The page plays through the Mac's current sound output. On 15.9.2026 that output was BlackHole 2ch, a virtual
+cable that is silent unless something records it; every page was mute, not only this one. Sound Settings, or
+`SwitchAudioSource -s "MacBook Pro Speakers"`, puts it back on speakers. `afplay audio/<file>.wav` plays a
+said file outside the browser and settles whether the page or the output is the question.
