@@ -35,7 +35,10 @@ also stand at the top of the page, each with a COPY button.
   placed under the text box and in every archive card: a black scope with the peaks, the spoken part in
   amber, a red playhead, the clock on the right, pages of ten seconds turned at once, and five cells,
   play, stop, back and next (five seconds), save (the WAV). Two folds under the player, each with its choice on its
-  header so they can stay closed: **HOW**, pills that combine (mood, pace, volume, tone, "as", sounds)
+  header so they can stay closed: Above the folds, **SPEED**: one of seven paces, very slow (90) to very fast (220 words per
+  minute), asked of the voice in the prompt, since Gemini has no rate knob; the audio is never stretched
+  afterwards, and the pace that came back is measured (words / seconds) and shown beside the asked one
+  (measured 15.9.2026: asked 90, got 106; asked 220, got 219). **HOW**, pills that combine (mood, pace, volume, tone, "as", sounds)
   into a prose direction before the text, editable in your own words; **VOICE**, the filter rows and the
   thirty voices. SAY IT always answers: an empty text, no voice, an empty ring, a refused key each say
   why in the feedback line. The last voice and way are kept in `audio/settings.json` between sessions;

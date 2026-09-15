@@ -36,6 +36,11 @@
   (design language 2: the same player is the same component). Pages are even divisions under ten seconds and the
   turn is instant (rule 8, nothing the eye has to follow).
 
+- **The pace is asked, never stretched.** (15.9.2026) Gemini TTS has no rate parameter; "Speak at a slow pace, about
+  110 words per minute" in the prompt is obeyed within about fifteen percent (asked 90 got 106, asked 220 got 219).
+  A post-hoc time stretch would keep the exact number and add artefacts; Marko asked for the voice's own rhythm at the
+  pace, so the number is a request and the measured pace is shown beside it, honestly.
+
 ## THE BUGS
 
 - (15.9.2026) "The app is not working, I don't get any voices." Driven in his Chrome: it worked; the voice arrived in
@@ -54,6 +59,10 @@
 | v | date | what |
 |---|---|---|
 | 1 | 15.9.2026 | born: thirty voices, the ring, the archive, both installers, the four tests, the gates |
+| 7 | 15.9.2026 | the documents for the speed |
+| 6 | 15.9.2026 | SPEED asked in words per minute, the pace that came back measured and shown; the estimate uses it |
+| 5 | 15.9.2026 | gvoices as a second spelling; README on a Mac whose output is BlackHole |
+| 4 | 15.9.2026 | the test copy opens no browser and touches no registry; a dead page names its port; gvoice opens the running copy |
 | 3 | 15.9.2026 | the waveform deck of Maha Transcribe Streamlit under the text box and in every archive card; darkreader-lock; SVG glyphs; driven in Chrome and heard through BlackHole |
 | 2 | 15.9.2026 | the player under the text box with the spinner, the estimate and the live walk (/api/progress); HOW as combinable pills in a fold, VOICE in a fold; SAY IT says why when it cannot; the last voice and way on the server, Sulafat the first time |
 

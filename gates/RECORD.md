@@ -5,8 +5,8 @@
 - dead code: routes nobody calls: 0
 - budget: page bytes: 42014
 - budget: requirements: 2
-- version: local: 6
-- version: origin/main: 5
+- version: local: 7
+- version: origin/main: 6
 
 ## Failed
 

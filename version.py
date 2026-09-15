@@ -9,6 +9,7 @@ v3 (15.9.2026): the waveform deck of Maha Transcribe Streamlit (peaks, amber, re
 v4 (15.9.2026): the test copy never opens a browser; a dead page names its port and says to run gvoice; gvoice opens the running copy instead of a second one.
 v5 (15.9.2026): gvoices as a second spelling of the command; README on a Mac whose output is BlackHole.
 v6 (15.9.2026): SPEED before generating, asked of the voice in words per minute, the pace that came back measured and shown.
+v7 (15.9.2026): the documents for the speed.
 """
 
-APP_VERSION = 6
+APP_VERSION = 7
