@@ -9,3 +9,11 @@
    the picker was wrong. `pkill -f` needs the real command line, `app.py 8300`.
 4. **The pty test must strip the colours** before it looks for "q quit"; and it must wait for the LAST word
    of the row, not the first, or it reads a half-printed banner.
+5. **"It is not working" must be watched in his browser, not curled.** (15.9.2026) Every route answered curl; the
+   page in his Chrome was repainted by Dark Reader, amber to grey and triangles to squares. A `<meta
+   name="darkreader-lock">` stops it, and glyphs drawn as inline SVG cannot be repainted. Check
+   `document.documentElement.attributes` for data-darkreader-* before doubting the CSS.
+6. **Hear it through BlackHole.** The Mac's output is BlackHole 2ch; `ffmpeg -f avfoundation -i ":BlackHole 2ch"`
+   records what the browser plays, and volumedetect and silencedetect turn it into numbers: silence until the press,
+   −21.8 dB peak while the voice spoke, silence after. That is the test of the sound, not of the file.
+

@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>GVoices, Google Voices</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<!-- Dark Reader recoloured the amber tab grey and turned the deck's triangles into squares (measured in Marko's
+     Chrome, 15.9.2026: data-darkreader-mode=dynamic). The page is dark already; this lock asks it to leave it alone. -->
+<meta name="darkreader-lock">
+<meta name="color-scheme" content="dark">
 <style>
 /* AGY UI tokens (design-language.md, MAHA_TRANSCRIBE_TERMUX_TERMINAL): dark, amber, sand, mono */
 :root {
@@ -60,6 +64,27 @@ textarea { min-height: 96px; }
 .bar { height: 3px; width: 100%; background: var(--line); border-radius: 2px; margin: 6px 0; overflow: hidden; }
 .bar i { display: block; height: 100%; width: 0; background: var(--amber); transition: width .4s linear; }
 .bar i.done { background: var(--green); }
+/* THE DECK (Marko, 15.9.2026: "build me waveform so ... my player is same as a player in my app, Maha Transcribe
+   Streamlit"): copied from MAHA_TRANSCRIBE_STREAMLIT/waveform_frontend/index.html. A black scope with the peaks,
+   the spoken part in amber, a red playhead, the clock on the right, pages of ten seconds; five cells under it.
+   Built once (Deck below) and placed under the text box and in every archive card: one visual language. */
+.deck { background: #15181d; border: 1px solid #2b313a; border-radius: 6px; padding: 8px; margin-top: 8px; -webkit-user-select: none; user-select: none; }
+.deck .scopewrap { background: var(--bg); border: 1px solid #2b313a; border-radius: 3px; height: 82px; position: relative; overflow: hidden; margin-bottom: 8px; }
+.deck canvas { display: block; width: 100%; height: 100%; cursor: pointer; }
+.deck .clock { position: absolute; right: 0; top: 0; bottom: 0; width: 96px; display: flex; align-items: center; justify-content: center;
+  background: var(--bg); border-left: 1px solid #2b313a; font-variant-numeric: tabular-nums; font-size: 13px; color: #9aa3af; z-index: 2; }
+.deck .clock.live { color: var(--amber); }
+.deck .page { position: absolute; left: 6px; top: 4px; font-size: 10px; color: #9aa3af; z-index: 2; letter-spacing: .06em; }
+.deck .row { display: flex; gap: 0; }
+.deck .key { flex: 1 1 0; height: 44px; min-width: 0; background: #1d2127; color: #e5e7eb; border: 1px solid #2b313a; border-right-width: 0;
+  font: 12px var(--mono); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 0 2px; text-decoration: none; }
+.deck .key:last-child { border-right-width: 1px; border-radius: 0 3px 3px 0; }
+.deck .key:first-child { border-radius: 3px 0 0 3px; }
+.deck .key.on { background: var(--amber); color: var(--bg); }
+.deck .gl { display: inline-flex; flex: none; } .deck .g { display: block; }
+.deck.idle .scopewrap, .deck.idle .row { opacity: .38; }        /* dimmed, not hidden: everything is already there */
+.deck.idle .row { pointer-events: none; }
+.deck .msg { margin-top: 6px; min-height: 14px; font-size: 11px; color: #9aa3af; }
 .acts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
 .btn { border: 1px solid var(--line); background: var(--surface-2); color: var(--prose); border-radius: 999px; padding: 8px 14px;
   font: 11px var(--mono); letter-spacing: .04em; cursor: pointer; text-decoration: none; display: inline-block; }
@@ -111,8 +136,7 @@ textarea { min-height: 96px; }
       <div class="prog" id="prog"><span class="spin" id="spin"></span><span id="progtext">nothing said yet</span></div>
       <div class="bar"><i id="barfill"></i></div>
       <div class="who" id="who"></div>
-      <audio id="audio" controls preload="none"></audio>
-      <div class="acts"><a class="btn dimmed" id="download" href="#" download>DOWNLOAD WAV</a></div>
+      <div id="deck-main"></div>
       <div class="status" id="status"></div>
     </div>
     <!-- HOW and VOICE fold away (Marko, 15.9.2026: "collapsible so they don't take much of the real estate ... chooses
@@ -174,6 +198,88 @@ textarea { min-height: 96px; }
     return fetch(path, opts).then(function (r) { return r.json().then(function (j) { j._http = r.status; return j; }); });
   }
   function when(t) { var d = new Date(t * 1000); return d.toLocaleDateString() + ' ' + d.toLocaleTimeString().slice(0, 5); }
+
+  // ------------------------------------------------------------ THE DECK, built once, placed everywhere
+  // From MAHA_TRANSCRIBE_STREAMLIT/waveform_frontend: peaks, not samples (each column keeps the loudest value of
+  // its slice); pages are even divisions under ten seconds; the page turn is instant, never a slide; back and
+  // next are five seconds here (no sentence cues); save is the server's download link.
+  var PAGE_SECONDS = 10, CLOCK_W = 96;
+  var G = { tri: '<svg class="g" viewBox="0 0 12 12" width="11" height="11"><path d="M2 1l9 5-9 5z" fill="currentColor"/></svg>', par: '<svg class="g" viewBox="0 0 12 12" width="11" height="11"><path d="M2 1h3v10H2zM7 1h3v10H7z" fill="currentColor"/></svg>', sq: '<svg class="g" viewBox="0 0 12 12" width="11" height="11"><rect x="1.5" y="1.5" width="9" height="9" fill="currentColor"/></svg>', bk: '<svg class="g" viewBox="0 0 12 12" width="11" height="11"><path d="M11 1v10L2 6z" fill="currentColor"/></svg>', fw: '<svg class="g" viewBox="0 0 12 12" width="11" height="11"><path d="M1 1v10l9-5z" fill="currentColor"/></svg>', dl: '<svg class="g" viewBox="0 0 12 12" width="11" height="11"><path d="M5 1h2v5h2.5L6 10 2.5 6H5z" fill="currentColor"/><rect x="1" y="10.5" width="10" height="1.5" fill="currentColor"/></svg>' };   // drawn, not fetched
+  function Deck(host) {
+    host.innerHTML = '<div class="deck idle"><div class="scopewrap"><canvas></canvas><div class="page"></div><div class="clock">0:00</div></div>' +
+      '<div class="row"><button class="key" data-k="play"><span class="gl">' + G.tri + '</span><span class="lbl">play</span></button>' +
+      '<button class="key" data-k="stop"><span class="gl">' + G.sq + '</span><span>stop</span></button>' +
+      '<button class="key" data-k="back"><span class="gl">' + G.bk + '</span><span>back</span></button>' +
+      '<button class="key" data-k="fwd"><span class="gl">' + G.fw + '</span><span>next</span></button>' +
+      '<a class="key" data-k="save" href="#" download><span class="gl">' + G.dl + '</span><span>save</span></a></div><div class="msg"></div></div>';
+    var root = host.firstChild, wave = root.querySelector('canvas'), ctx = wave.getContext('2d'), clock = root.querySelector('.clock'),
+        pageEl = root.querySelector('.page'), msg = root.querySelector('.msg'), bPlay = root.querySelector('[data-k=play]'),
+        gPlay = bPlay.firstChild, lPlay = bPlay.querySelector('.lbl'), bSave = root.querySelector('[data-k=save]');
+    var audio = new Audio(), peaks = null, dur = 0, raf = null, src = '';
+    function mmss(t) { t = Math.max(0, t | 0); return (t / 60 | 0) + ':' + ('0' + (t % 60)).slice(-2); }
+    function pageCount() { return Math.max(1, Math.ceil(dur / PAGE_SECONDS)); }
+    function pageSpan() { return dur ? dur / pageCount() : PAGE_SECONDS; }
+    function fit() { var r = wave.getBoundingClientRect(), d = window.devicePixelRatio || 1; wave.width = Math.max(1, Math.round(r.width * d)); wave.height = Math.max(1, Math.round(r.height * d)); ctx.setTransform(d, 0, 0, d, 0, 0); }
+    function buildPeaks(buf, per) {
+      var ch = buf.getChannelData(0), n = Math.max(1, Math.round(buf.duration * per)), step = Math.floor(ch.length / n) || 1, out = new Float32Array(n);
+      for (var i = 0; i < n; i++) { var a = i * step, b = Math.min(ch.length, a + step), m = 0; for (var j = a; j < b; j += 2) { var v = ch[j] < 0 ? -ch[j] : ch[j]; if (v > m) m = v; } out[i] = m; }
+      return { p: out, per: per };
+    }
+    function draw() {
+      fit();
+      var w = wave.clientWidth - CLOCK_W, h = wave.clientHeight, mid = h / 2;
+      ctx.clearRect(0, 0, wave.clientWidth, h);
+      if (!peaks || !dur) { ctx.strokeStyle = '#2b313a'; ctx.beginPath(); ctx.moveTo(0, mid); ctx.lineTo(w, mid); ctx.stroke(); clock.textContent = '0:00'; pageEl.textContent = ''; return; }
+      var t = audio.currentTime || 0, sp = pageSpan(), page = Math.min(pageCount() - 1, Math.floor(t / sp)), t0 = page * sp, t1 = Math.min(dur, t0 + sp), span = t1 - t0;
+      ctx.fillStyle = '#3f4650';
+      for (var x = 0; x < w; x++) { var i = Math.floor((t0 + (x / w) * span) * peaks.per), v = peaks.p[i] || 0, hh = Math.max(1, v * (mid - 4)); ctx.fillRect(x, mid - hh, 1, hh * 2); }
+      if (t > t0) {
+        var px = Math.min(w, ((t - t0) / span) * w);
+        ctx.fillStyle = '#f59e0b';
+        for (var x2 = 0; x2 < px; x2++) { var i2 = Math.floor((t0 + (x2 / w) * span) * peaks.per), v2 = peaks.p[i2] || 0, h2 = Math.max(1, v2 * (mid - 4)); ctx.fillRect(x2, mid - h2, 1, h2 * 2); }
+        ctx.fillStyle = '#ef4444'; ctx.fillRect(Math.min(w - 1, px), 0, 1.5, h);
+      }
+      pageEl.textContent = (page + 1) + '/' + pageCount();
+      clock.textContent = mmss(t) + ' / ' + mmss(dur);
+    }
+    function tick() { raf = requestAnimationFrame(tick); draw(); }
+    function setPlaying(on) { bPlay.className = 'key' + (on ? ' on' : ''); gPlay.innerHTML = on ? G.par : G.tri; lPlay.textContent = on ? 'pause' : 'play'; clock.className = 'clock' + (on ? ' live' : ''); }
+    bPlay.onclick = function () {
+      if (!src) return;
+      if (audio.paused) audio.play().catch(function (err) { setPlaying(false); msg.textContent = 'this browser would not play it, press play again'; });
+      else audio.pause();
+    };
+    root.querySelector('[data-k=stop]').onclick = function () { audio.pause(); audio.currentTime = 0; setPlaying(false); draw(); };
+    root.querySelector('[data-k=back]').onclick = function () { audio.currentTime = Math.max(0, (audio.currentTime || 0) - 5); draw(); };
+    root.querySelector('[data-k=fwd]').onclick = function () { audio.currentTime = Math.min(dur || 0, (audio.currentTime || 0) + 5); draw(); };
+    wave.onclick = function (e) {
+      if (!dur) return;
+      var r = wave.getBoundingClientRect(), w = r.width - CLOCK_W, x = e.clientX - r.left; if (x > w) return;
+      var sp = pageSpan(), page = Math.min(pageCount() - 1, Math.floor((audio.currentTime || 0) / sp)), t0 = page * sp, span = Math.min(dur, t0 + sp) - t0;
+      audio.currentTime = Math.max(0, Math.min(dur, t0 + (x / w) * span)); draw();
+    };
+    audio.onplay = function () { setPlaying(true); if (!raf) tick(); };
+    audio.onpause = function () { setPlaying(false); if (raf) { cancelAnimationFrame(raf); raf = null; } draw(); };
+    audio.onended = function () { setPlaying(false); if (raf) { cancelAnimationFrame(raf); raf = null; } draw(); };
+    window.addEventListener('resize', draw);
+    var deck = {
+      load: function (url, name, autoplay) {
+        src = url; audio.src = url; peaks = null; dur = 0;
+        bSave.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'download=1'; bSave.setAttribute('download', name || 'gvoices.wav');
+        root.classList.remove('idle'); msg.textContent = 'reading the audio…'; draw();
+        fetch(url).then(function (r) { return r.arrayBuffer(); }).then(function (ab) { var AC = window.AudioContext || window.webkitAudioContext; return new AC().decodeAudioData(ab); })
+          .then(function (buf) { dur = buf.duration; peaks = buildPeaks(buf, 200); msg.textContent = ''; draw(); })
+          .catch(function () { msg.textContent = 'no waveform for this audio'; dur = audio.duration || 0; draw(); });
+        if (autoplay) audio.play().catch(function () { setPlaying(false); msg.textContent = 'press play to hear it'; });
+      },
+      clear: function () { src = ''; audio.removeAttribute('src'); peaks = null; dur = 0; root.classList.add('idle'); msg.textContent = ''; setPlaying(false); draw(); },
+      pause: function () { audio.pause(); }
+    };
+    setPlaying(false); fit(); draw();
+    return deck;
+  }
+  var mainDeck = Deck($('deck-main'));
+  var cardDecks = [];
 
   // ------------------------------------------------------------ tabs
   document.querySelectorAll('.tabs button').forEach(function (b) {
@@ -277,11 +383,8 @@ textarea { min-height: 96px; }
   // ------------------------------------------------------------ say
   function showItem(it, note) {
     $('who').textContent = it.voice + ' · ' + it.model + ' · ' + it.key + ' · ' + it.seconds + ' s of speech' + (it.took ? ' · took ' + it.took + ' s' : '') + (note ? ' · ' + note : '');
-    $('audio').src = '/audio/' + encodeURIComponent(it.file);
-    $('download').href = '/audio/' + encodeURIComponent(it.file) + '?download=1';
-    $('download').setAttribute('download', it.file);
-    $('download').classList.remove('dimmed');
-    $('audio').play().catch(function () {});
+    cardDecks.forEach(function (d) { d.pause(); });
+    mainDeck.load('/audio/' + encodeURIComponent(it.file), it.file, true);
   }
   // THE ESTIMATE: seconds of speech ≈ words / 2.6; Google takes about 1.8 × the speech length (gemini-speech.md),
   // corrected by what the archive measured (took / seconds of the last sentences), plus two seconds of the road.
@@ -341,11 +444,14 @@ textarea { min-height: 96px; }
     items.forEach(function (it) {
       html += '<div class="card" data-id="' + esc(it.id) + '"><div class="t">' + esc(it.text) + '</div>' +
         '<div class="m">' + esc(it.voice) + (it.style ? ' · ' + esc(it.style) : '') + ' · ' + esc(it.model) + ' · ' + esc(it.key) + ' · ' + it.seconds + ' s · ' + when(it.at) + '</div>' +
-        '<audio controls preload="none" src="/audio/' + encodeURIComponent(it.file) + '"></audio>' +
-        '<div class="acts"><a class="btn" href="/audio/' + encodeURIComponent(it.file) + '?download=1" download="' + esc(it.file) + '">DOWNLOAD WAV</a>' +
-        '<button class="btn" data-again="' + esc(it.id) + '">SAY AGAIN</button><button class="btn warn" data-del="' + esc(it.id) + '">DELETE</button></div></div>';
+        '<div class="deck-slot" data-file="' + esc(it.file) + '"></div>' +
+        '<div class="acts"><button class="btn" data-again="' + esc(it.id) + '">SAY AGAIN</button><button class="btn warn" data-del="' + esc(it.id) + '">DELETE</button></div></div>';
     });
     $('archive').innerHTML = html;
+    cardDecks.forEach(function (d) { d.pause(); }); cardDecks = [];
+    document.querySelectorAll('#archive .deck-slot').forEach(function (slot) {
+      var d = Deck(slot); d.load('/audio/' + encodeURIComponent(slot.dataset.file), slot.dataset.file, false); cardDecks.push(d);
+    });
     document.querySelectorAll('#archive [data-del]').forEach(function (b) {
       b.addEventListener('click', function () {
         api('/api/archive/' + encodeURIComponent(b.dataset.del), { method: 'DELETE' }).then(function (r) { S.state.archive = r.archive || []; renderArchive(); });

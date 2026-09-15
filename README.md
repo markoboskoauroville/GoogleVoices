@@ -31,13 +31,16 @@ also stand at the top of the page, each with a COPY button.
 - **SAY**: the text, and right under it the player with the feedback: a spinner while Google works, the
   seconds so far against an estimate (the length of the speech times what the last sentences measured),
   the walk of the ring as it happens (which key, which model, waiting, to the bottom, answered), then
-  the audio, DOWNLOAD WAV, and what it cost. Two folds under the player, each with its choice on its
+  the deck, and what it cost. The deck is the waveform player of Maha Transcribe Streamlit, built once and
+  placed under the text box and in every archive card: a black scope with the peaks, the spoken part in
+  amber, a red playhead, the clock on the right, pages of ten seconds turned at once, and five cells,
+  play, stop, back and next (five seconds), save (the WAV). Two folds under the player, each with its choice on its
   header so they can stay closed: **HOW**, pills that combine (mood, pace, volume, tone, "as", sounds)
   into a prose direction before the text, editable in your own words; **VOICE**, the filter rows and the
   thirty voices. SAY IT always answers: an empty text, no voice, an empty ring, a refused key each say
   why in the feedback line. The last voice and way are kept in `audio/settings.json` between sessions;
   the first start speaks with Sulafat.
-- **ARCHIVE**: everything said, newest first, each with its own player, DOWNLOAD WAV, SAY AGAIN
+- **ARCHIVE**: everything said, newest first, each with its own deck (save is the download), SAY AGAIN
   (puts the text, the way and the voice back on the SAY tab) and DELETE. The files are
   `audio/<date>_<voice>_<words>.wav`, the list `audio/index.json`. The same text in the same voice
   with the same way is never asked twice: the archive answers, nothing is spent.
@@ -95,3 +98,11 @@ sentence at a time, never two keys in flight.
 
 Keys and audio are gitignored. `TAKEOVER.md` brings it back on a fresh machine, `LESSONS.md` is
 what it cost to learn, `HANDOVER.md` the state now, `DEVELOPMENT.md` the reasons.
+
+## Heard, not only served
+
+On 15.9.2026 the page was driven in Marko's own Chrome: a sentence typed, SAY IT pressed, the spinner and
+the walk watched, the voice arrived in 6 s; then the archive's deck was played while ffmpeg recorded the
+Mac's BlackHole output: silence until the press, then the voice at −21.8 dB peak with the sentence's own
+pauses. The muted colours he saw were Dark Reader recolouring the page; the page now carries
+`<meta name="darkreader-lock">`, and the deck's glyphs are inline SVG, which no extension repaints.

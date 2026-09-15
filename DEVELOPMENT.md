@@ -28,7 +28,20 @@
 - **The voice and the way are the server's memory**, audio/settings.json, so a new browser or the phone's Chrome
   finds them; localStorage only mirrors. The first start is Sulafat (warm), a choice, not Google's.
 
+- **Not Streamlit.** (15.9.2026) Marko asked whether the app should be a Streamlit app on macOS and Termux. No: the
+  house floor (never-back-to-zero.md) is one HTML page on a small Flask server, which is what runs on a phone; Streamlit
+  is a heavy install on Termux and slow to start there, and its waveform player was a custom HTML component anyway,
+  which is exactly what the deck here is. The same deck, no Streamlit round trip under it.
+- **The deck is one function, Deck(host).** Built once and placed under the text box and in every archive card
+  (design language 2: the same player is the same component). Pages are even divisions under ten seconds and the
+  turn is instant (rule 8, nothing the eye has to follow).
+
 ## THE BUGS
+
+- (15.9.2026) "The app is not working, I don't get any voices." Driven in his Chrome: it worked; the voice arrived in
+  6 s and the archive's deck played through BlackHole. What he saw was Dark Reader repainting the page: the amber
+  tab grey, the CSS-border triangles as squares. `<meta name="darkreader-lock">` and SVG glyphs now; the earlier
+  version had also demanded a chosen voice before SAY IT would answer, which v2 already replaced with a reason line.
 
 - (15.9.2026, building) The pty test read the key row before the console had printed it, then looked for
   "q quit" through the colour codes. The test now waits for "restart" and strips the escapes.
@@ -41,6 +54,7 @@
 | v | date | what |
 |---|---|---|
 | 1 | 15.9.2026 | born: thirty voices, the ring, the archive, both installers, the four tests, the gates |
+| 3 | 15.9.2026 | the waveform deck of Maha Transcribe Streamlit under the text box and in every archive card; darkreader-lock; SVG glyphs; driven in Chrome and heard through BlackHole |
 | 2 | 15.9.2026 | the player under the text box with the spinner, the estimate and the live walk (/api/progress); HOW as combinable pills in a fold, VOICE in a fold; SAY IT says why when it cannot; the last voice and way on the server, Sulafat the first time |
 
 ## WHAT WAS INHERITED
