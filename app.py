@@ -318,7 +318,8 @@ if __name__ == "__main__":
         except ValueError:
             print("ignoring invalid port argument %r, using %d" % (sys.argv[1], DEFAULT_PORT))
     LIVE_PORT, port_note = portpick.pick("127.0.0.1", requested)       # never "could not start" (ports.md)
-    portpick.announce(COMMAND, LIVE_PORT)                              # ~/.mantra/ports/gvoice
+    if not os.environ.get("GVOICE_TEST"):                              # the test copy neither announces nor forgets
+        portpick.announce(COMMAND, LIVE_PORT)                          # ~/.mantra/ports/gvoice
     action = term.run(app, "127.0.0.1", LIVE_PORT, snapshot=console_snapshot, note=port_note,
                       on_check_update=selfupdate.check_remote, on_perform_update=selfupdate.perform_update)
     if action == "restart":

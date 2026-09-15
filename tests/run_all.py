@@ -139,7 +139,7 @@ def test4_upgrade():
     import selfupdate
     check(callable(selfupdate.check_remote) and callable(selfupdate.perform_update), "selfupdate has the two halves")
     # the console on a pty: the banner, the key row, then q ends it
-    env = dict(os.environ, GVOICE_TEST="1")
+    os.environ["GVOICE_TEST"] = "1"      # the child inherits it through execv: the test copy must never open a browser
     pid, fd = pty.fork()
     if pid == 0:
         os.chdir(ROOT)

@@ -434,7 +434,7 @@ textarea { min-height: 96px; }
       showItem(r.item, r.cached ? 'cached' : 'new');
       if (!r.cached) { S.state.archive.unshift(r.item); }
       renderArchive(); renderRing();
-    }).catch(function (e) { clearInterval(poll); S.busy = false; $('say').disabled = false; $('say').textContent = 'SAY IT'; $('spin').classList.remove('on'); $('progtext').textContent = 'the server does not answer'; $('status').className = 'status err'; $('status').textContent = String(e); });
+    }).catch(function (e) { clearInterval(poll); S.busy = false; $('say').disabled = false; $('say').textContent = 'SAY IT'; $('spin').classList.remove('on'); $('barfill').style.width = '100%'; $('barfill').style.background = 'var(--red)'; gone(e); });
   });
 
   // ------------------------------------------------------------ archive
@@ -535,7 +535,15 @@ textarea { min-height: 96px; }
     setFold('voice', fv === null ? !S.voice : fv === '1');
     try { var t = localStorage.getItem('gv.tab'); if (t) { var b = document.querySelector('.tabs button[data-tab=' + t + ']'); if (b) b.click(); } } catch (e) {}
     if (window.MantraReader && window.MantraReader.attach) { /* READ buttons come with reader.js when the voice is up */ }
-  }).catch(function (e) { $('status').className = 'status err'; $('status').textContent = 'the server does not answer: ' + e; });
+  }).catch(function (e) { gone(e); });
+  // THE SERVER IS GONE (Marko, 15.9.2026, from a page left behind on port 8399 by a test copy that had quit): say which
+  // port this page belongs to and how to get a live one, instead of "Failed to fetch".
+  function gone(e) {
+    $('progtext').textContent = 'this page\'s server on port ' + location.port + ' is gone';
+    $('status').className = 'status err';
+    $('status').textContent = 'nothing answers at ' + location.host + ' (' + e + ').\nStart it again with  gvoice  in a terminal: it opens the page on its own port, and if a copy is already running it opens that one.';
+  }
+  window.addEventListener('unhandledrejection', function () {});
 })();
 </script>
 </body>

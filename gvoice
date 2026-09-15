@@ -16,6 +16,21 @@ if [[ "${1:-}" == "update" ]]; then
   exec bash "$REPO_DIR/gvoice-update"
 fi
 
+# ALREADY RUNNING? Then open its page and stop here (the `maha` rule; ports.md §3: the registry says the live port,
+# and only a port that answers is trusted). Two copies of the app are two ports and two pages: one is confusing.
+REG="$HOME/.mantra/ports/gvoice"
+if [[ "${1:-}" != "new" && -r "$REG" ]]; then
+  LIVE="$(head -c 16 "$REG" | tr -dc '0-9')"
+  if [[ -n "$LIVE" ]] && curl -sf -m 2 -o /dev/null "http://127.0.0.1:$LIVE/favicon.svg" 2>/dev/null; then
+    URL="http://127.0.0.1:$LIVE/"
+    if command -v termux-open-url >/dev/null 2>&1; then termux-open-url "$URL" >/dev/null 2>&1 || true
+    elif command -v open >/dev/null 2>&1; then open "$URL" >/dev/null 2>&1 || true
+    elif command -v xdg-open >/dev/null 2>&1; then xdg-open "$URL" >/dev/null 2>&1 || true; fi
+    echo "  gvoice is already running on port $LIVE, opened its page ($URL); 'gvoice new' starts a second copy"
+    exit 0
+  fi
+fi
+
 # the python: the repo's venv on a Mac or Linux, Termux's own python on the phone
 PY="$REPO_DIR/.venv/bin/python"
 if [[ ! -x "$PY" ]]; then
@@ -28,4 +43,5 @@ command -v termux-wake-lock >/dev/null 2>&1 && termux-wake-lock 2>/dev/null || t
 trap 'command -v termux-wake-unlock >/dev/null 2>&1 && termux-wake-unlock 2>/dev/null || true' EXIT
 
 PORT="${1:-8300}"
+[[ "$PORT" == "new" ]] && PORT=8300
 exec "$PY" "$REPO_DIR/app.py" "$PORT"
