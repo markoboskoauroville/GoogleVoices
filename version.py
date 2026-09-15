@@ -13,6 +13,7 @@ v7 (15.9.2026): the documents for the speed.
 v8 (15.9.2026): LANGUAGE, English or Croatian, asked of the voice in the prompt, remembered and shown.
 v9 (15.9.2026): tags in the text: a HOW pill inserts <its words> at the cursor; the model reads them as directions.
 v10 (15.9.2026): the documents for the language and the tags.
+v11 (15.9.2026): the tags measured in the audio.
 """
 
-APP_VERSION = 10
+APP_VERSION = 11

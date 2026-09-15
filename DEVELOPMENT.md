@@ -48,7 +48,9 @@
 - **A tag is `<warmly>` in the text and `[warmly]` in the prompt.** (15.9.2026) Marko types the angle brackets because
   a pill inserts them at his cursor; Gemini obeys square-bracket stage directions when the preamble says what they
   are, and that note is added only when the text actually holds a tag. Tags are stripped before the words are counted,
-  so the estimate is not thrown by them. Proven: three tags, 18 words, 152 words a minute measured.
+  so the estimate is not thrown by them. Proven: three tags, 18 words, 152 words a minute measured. And the tags are
+  heard, not only obeyed on paper: "<cheerfully> Good morning Marko. <whispering> And now the secret part." came back
+  with its first half at −14.0 dB mean and its whispered half at −17.0 dB, three decibels quieter, in one take.
 
 ## THE BUGS
 
@@ -68,6 +70,8 @@
 | v | date | what |
 |---|---|---|
 | 1 | 15.9.2026 | born: thirty voices, the ring, the archive, both installers, the four tests, the gates |
+| 11 | 15.9.2026 | the tags measured in the audio (−14.0 dB cheerful, −17.0 dB whispered) |
+| 10 | 15.9.2026 | the documents for the language and the tags |
 | 9 | 15.9.2026 | tags in the text: a HOW pill inserts <its words> at the cursor, the model reads them as bracketed directions |
 | 8 | 15.9.2026 | LANGUAGE, English or Croatian, asked of the voice; remembered and shown |
 | 7 | 15.9.2026 | the documents for the speed |
