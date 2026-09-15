@@ -139,6 +139,8 @@ textarea { min-height: 96px; }
       <div id="deck-main"></div>
       <div class="status" id="status"></div>
     </div>
+    <!-- THE SPEED, before generating (Marko, 15.9.2026): asked of the model in words per minute, never stretched after -->
+    <div class="filters"><div class="frow"><span class="tag">SPEED (asked of the voice, in words per minute; the pace that came back is measured and shown above)</span><span id="speeds"></span></div></div>
     <!-- HOW and VOICE fold away (Marko, 15.9.2026: "collapsible so they don't take much of the real estate ... chooses
          its way of expressing and its voice, and then this can be collapsed") -->
     <div class="fold" id="fold-how">
@@ -306,6 +308,17 @@ textarea { min-height: 96px; }
     b.addEventListener('click', function () { setFold(b.dataset.fold, !$('fold-' + b.dataset.fold).classList.contains('open')); });
   });
 
+  // ------------------------------------------------------------ SPEED: one of, radio (design language 6)
+  S.speed = 150;
+  function renderSpeeds() {
+    var html = '';
+    (S.state.speeds || []).forEach(function (p) { html += '<button class="pill small' + (S.speed === p[0] ? ' on' : '') + '" data-speed="' + p[0] + '">' + p[1].toUpperCase() + ' · ' + p[0] + '</button>'; });
+    $('speeds').innerHTML = html;
+    document.querySelectorAll('#speeds .pill').forEach(function (b) {
+      b.addEventListener('click', function () { S.speed = parseInt(b.dataset.speed, 10); api('/api/settings', { json: { speed: S.speed } }).catch(function () {}); renderSpeeds(); });
+    });
+  }
+
   // ------------------------------------------------------------ HOW: the ways of saying it, combinable
   // Prose directions Gemini follows (gemini-speech.md: the direction is prose in the prompt; [whispers]-style tags
   // are the newer model's). Grouped so a mood, a pace, a volume and a role combine: "warmly, slowly, whispering,
@@ -382,7 +395,8 @@ textarea { min-height: 96px; }
 
   // ------------------------------------------------------------ say
   function showItem(it, note) {
-    $('who').textContent = it.voice + ' · ' + it.model + ' · ' + it.key + ' · ' + it.seconds + ' s of speech' + (it.took ? ' · took ' + it.took + ' s' : '') + (note ? ' · ' + note : '');
+    $('who').textContent = it.voice + ' · ' + it.model + ' · ' + it.key + ' · ' + it.seconds + ' s of speech' + (it.took ? ' · took ' + it.took + ' s' : '') +
+      (it.wpm ? ' · pace: asked ' + it.speed + ', got ' + it.wpm + ' words/min' : '') + (note ? ' · ' + note : '');
     cardDecks.forEach(function (d) { d.pause(); });
     mainDeck.load('/audio/' + encodeURIComponent(it.file), it.file, true);
   }
@@ -390,7 +404,7 @@ textarea { min-height: 96px; }
   // corrected by what the archive measured (took / seconds of the last sentences), plus two seconds of the road.
   function estimate(text) {
     var words = text.split(/\s+/).filter(Boolean).length;
-    var speech = Math.max(1, words / 2.6);
+    var speech = Math.max(1, words * 60 / (S.speed || 150));
     var ratios = (S.state.archive || []).filter(function (it) { return it.took && it.seconds; }).slice(0, 8).map(function (it) { return it.took / it.seconds; });
     var ratio = ratios.length ? ratios.sort(function (a, b) { return a - b; })[Math.floor(ratios.length / 2)] : 1.8;
     return Math.round(speech * ratio + 2);
@@ -418,7 +432,7 @@ textarea { min-height: 96px; }
     $('status').className = 'status'; $('status').textContent = '1. one key at a time, the first in the ring';
     $('who').textContent = '';
     poll = setInterval(tick, 500);
-    api('/api/say', { json: { text: text, voice: S.voice, style: $('style').value } }).then(function (r) {
+    api('/api/say', { json: { text: text, voice: S.voice, style: $('style').value, speed: S.speed } }).then(function (r) {
       clearInterval(poll); S.busy = false; $('say').disabled = false; $('say').textContent = 'SAY IT';
       $('spin').classList.remove('on');
       var took = ((Date.now() - t0) / 1000).toFixed(1);
@@ -443,7 +457,7 @@ textarea { min-height: 96px; }
     if (!items.length) html = '<div class="empty">nothing said yet</div>';
     items.forEach(function (it) {
       html += '<div class="card" data-id="' + esc(it.id) + '"><div class="t">' + esc(it.text) + '</div>' +
-        '<div class="m">' + esc(it.voice) + (it.style ? ' · ' + esc(it.style) : '') + ' · ' + esc(it.model) + ' · ' + esc(it.key) + ' · ' + it.seconds + ' s · ' + when(it.at) + '</div>' +
+        '<div class="m">' + esc(it.voice) + (it.style ? ' · ' + esc(it.style) : '') + (it.wpm ? ' · asked ' + it.speed + ', got ' + it.wpm + ' words/min' : '') + ' · ' + esc(it.model) + ' · ' + esc(it.key) + ' · ' + it.seconds + ' s · ' + when(it.at) + '</div>' +
         '<div class="deck-slot" data-file="' + esc(it.file) + '"></div>' +
         '<div class="acts"><button class="btn" data-again="' + esc(it.id) + '">SAY AGAIN</button><button class="btn warn" data-del="' + esc(it.id) + '">DELETE</button></div></div>';
     });
@@ -461,7 +475,7 @@ textarea { min-height: 96px; }
       b.addEventListener('click', function () {
         var it = items.filter(function (x) { return x.id === b.dataset.again; })[0];
         if (!it) return;
-        $('text').value = it.text; $('style').value = it.style || ''; S.voice = it.voice; renderHow(); renderVoices();
+        $('text').value = it.text; $('style').value = it.style || ''; S.voice = it.voice; if (it.speed) { S.speed = it.speed; renderSpeeds(); } renderHow(); renderVoices();
         document.querySelector('.tabs button[data-tab=say]').click();
         $('progtext').textContent = 'from the archive'; $('barfill').className = 'done'; $('barfill').style.width = '100%';
         showItem(it, 'from the archive');
@@ -528,6 +542,8 @@ textarea { min-height: 96px; }
     S.voice = (st.settings && st.settings.voice) || null;          // the server remembers between sessions; the first start is Sulafat
     if (S.voice && !st.voices.some(function (v) { return v.name === S.voice; })) S.voice = null;
     $('style').value = (st.settings && st.settings.style) || '';
+    S.speed = (st.settings && st.settings.speed) || 150;
+    renderSpeeds();
     renderHow(); renderFilters(); renderVoices(); renderArchive(); renderRing();
     var fh = null, fv = null;
     try { fh = localStorage.getItem('gv.fold.how'); fv = localStorage.getItem('gv.fold.voice'); } catch (e) {}

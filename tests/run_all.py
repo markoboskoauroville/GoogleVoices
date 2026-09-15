@@ -125,6 +125,9 @@ def test3_ugly():
     check(speech.verdict(-1, "no network", {})[0] == "outage", "no network is not the key")
     check(speech.pcm_of('{"candidates":[]}') == b"", "an answer without audio is empty, not a crash")
     check(speech.prompt_of("hello", "slowly.") == "slowly: hello" and speech.prompt_of("hello", "") == "hello", "the style goes before the text as prose")
+    check(speech.prompt_of("hello", "warmly", 110).startswith("Speak at a slow pace, about 110 words per minute") and speech.prompt_of("hello", "warmly", 110).endswith(". warmly: hello"), "the pace goes first, in words per minute")
+    check(speech.fingerprint("a", "Kore", "", 110) != speech.fingerprint("a", "Kore", "", 190), "two paces are two sentences in the cache")
+    check(speech.words_of("  one two  three ") == 3, "words are counted")
     import voices
     check(len(voices.catalogue()) == 30 and not voices.is_voice("Nobody"), "thirty voices, and an unknown name is refused")
 

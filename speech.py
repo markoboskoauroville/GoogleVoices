@@ -134,18 +134,39 @@ def seconds_of(pcm):
     return len(pcm) / 2.0 / RATE
 
 
-def prompt_of(text, style):
-    """The style is prose before the text (Gemini has no style field): 'Say it slowly: ...'."""
-    style = (style or "").strip()
+# THE PACE (Marko, 15.9.2026: "I need the speed of generation ... how fast the voice is talking so it's generating
+# exactly that pace without artifacts of stretching"): Gemini has no rate parameter; the pace is asked for in the
+# prompt as words per minute, and the audio is never stretched afterwards. What came back is measured (words / seconds)
+# and shown beside what was asked.
+SPEEDS = [(90, "very slow"), (110, "slow"), (130, "unhurried"), (150, "natural"), (170, "brisk"), (190, "fast"), (220, "very fast")]
+
+
+def pace_words(speed):
+    try:
+        speed = int(speed)
+    except (TypeError, ValueError):
+        return ""
+    name = min(SPEEDS, key=lambda p: abs(p[0] - speed))[1]
+    return "Speak at a %s pace, about %d words per minute, evenly, with natural pauses" % (name, speed)
+
+
+def prompt_of(text, style, speed=None):
+    """The direction is prose before the text (Gemini has no style field): 'Speak at ... . Say it slowly: ...'."""
+    style = (style or "").strip().rstrip(":.")
     text = (text or "").strip()
-    return ("%s: %s" % (style.rstrip(":."), text)) if style else text
+    head = ". ".join([x for x in (pace_words(speed), style) if x])
+    return ("%s: %s" % (head, text)) if head else text
 
 
-def fingerprint(text, voice, style):
-    return hashlib.sha256(("%s|%s|%s" % (voice, style or "", text)).encode()).hexdigest()[:16]
+def fingerprint(text, voice, style, speed=None):
+    return hashlib.sha256(("%s|%s|%s|%s" % (voice, style or "", speed or "", text)).encode()).hexdigest()[:16]
 
 
-def say(text, voice, style="", poster=post, sleeper=time.sleep, log=None):
+def words_of(text):
+    return len([w for w in (text or "").split() if w.strip()])
+
+
+def say(text, voice, style="", poster=post, sleeper=time.sleep, log=None, speed=None):
     """Walk the ring, one key at a time, and return a dict:
        ok, wav (bytes), seconds, model, label, pos, of, log (the sentences of the walk).
     poster and sleeper are injectable for the tests (four-tests.md, test 1: the mechanism alone)."""
@@ -154,7 +175,7 @@ def say(text, voice, style="", poster=post, sleeper=time.sleep, log=None):
         lines.append(s)
         if log:
             log(s)
-    body_text = prompt_of(text, style)
+    body_text = prompt_of(text, style, speed)
     if not ring.load():
         return {"ok": False, "error": "the ring is empty: pick your keys file on the KEYS tab", "log": lines}
     for label, key, pos, of in ring.walk():
