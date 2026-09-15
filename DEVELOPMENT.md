@@ -41,6 +41,15 @@
   A post-hoc time stretch would keep the exact number and add artefacts; Marko asked for the voice's own rhythm at the
   pace, so the number is a request and the measured pace is shown beside it, honestly.
 
+- **The language is asked, not detected.** (15.9.2026) Left alone the model guesses the language from the text, and a
+  Croatian sentence holding an English name can arrive with an English accent. "Speak in Croatian (hrvatski), with a
+  native Croatian accent" in the preamble settles it. The language belongs to the model, not to the voice
+  (gemini-speech.md), so all thirty voices offer both.
+- **A tag is `<warmly>` in the text and `[warmly]` in the prompt.** (15.9.2026) Marko types the angle brackets because
+  a pill inserts them at his cursor; Gemini obeys square-bracket stage directions when the preamble says what they
+  are, and that note is added only when the text actually holds a tag. Tags are stripped before the words are counted,
+  so the estimate is not thrown by them. Proven: three tags, 18 words, 152 words a minute measured.
+
 ## THE BUGS
 
 - (15.9.2026) "The app is not working, I don't get any voices." Driven in his Chrome: it worked; the voice arrived in
@@ -59,6 +68,8 @@
 | v | date | what |
 |---|---|---|
 | 1 | 15.9.2026 | born: thirty voices, the ring, the archive, both installers, the four tests, the gates |
+| 9 | 15.9.2026 | tags in the text: a HOW pill inserts <its words> at the cursor, the model reads them as bracketed directions |
+| 8 | 15.9.2026 | LANGUAGE, English or Croatian, asked of the voice; remembered and shown |
 | 7 | 15.9.2026 | the documents for the speed |
 | 6 | 15.9.2026 | SPEED asked in words per minute, the pace that came back measured and shown; the estimate uses it |
 | 5 | 15.9.2026 | gvoices as a second spelling; README on a Mac whose output is BlackHole |

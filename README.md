@@ -29,20 +29,27 @@ also stand at the top of the page, each with a COPY button.
 ## The page
 
 - **SAY**: the text, and right under it the player with the feedback: a spinner while Google works, the
-  seconds so far against an estimate (the length of the speech times what the last sentences measured),
+  seconds so far against an estimate (the words at the chosen pace, times what the last sentences measured),
   the walk of the ring as it happens (which key, which model, waiting, to the bottom, answered), then
   the deck, and what it cost. The deck is the waveform player of Maha Transcribe Streamlit, built once and
   placed under the text box and in every archive card: a black scope with the peaks, the spoken part in
   amber, a red playhead, the clock on the right, pages of ten seconds turned at once, and five cells,
-  play, stop, back and next (five seconds), save (the WAV). Two folds under the player, each with its choice on its
-  header so they can stay closed: Above the folds, **SPEED**: one of seven paces, very slow (90) to very fast (220 words per
-  minute), asked of the voice in the prompt, since Gemini has no rate knob; the audio is never stretched
-  afterwards, and the pace that came back is measured (words / seconds) and shown beside the asked one
-  (measured 15.9.2026: asked 90, got 106; asked 220, got 219). **HOW**, pills that combine (mood, pace, volume, tone, "as", sounds)
-  into a prose direction before the text, editable in your own words; **VOICE**, the filter rows and the
-  thirty voices. SAY IT always answers: an empty text, no voice, an empty ring, a refused key each say
-  why in the feedback line. The last voice and way are kept in `audio/settings.json` between sessions;
-  the first start speaks with Sulafat.
+  play, stop, back and next (five seconds), save (the WAV).
+  Under the player, two rows and two folds. **LANGUAGE**: English or Croatian, asked of the voice in the
+  prompt so the accent and the pronunciation are that language's own; all thirty voices speak both.
+  **SPEED**: one of seven paces, very slow (90) to very fast (220 words a minute), asked of the voice
+  because Gemini has no rate knob; the audio is never stretched afterwards, and the pace that came back is
+  measured (words / seconds) and shown beside the asked one (15.9.2026: asked 90, got 106; asked 220, got
+  219). Then the folds, each carrying its choice on its header so it can stay closed: **HOW**, seventy-seven
+  pills in six groups (mood, pace, volume, tone, "as", sounds), and **VOICE**, the filter rows and the thirty
+  voices.
+  **A HOW pill inserts its tag at the cursor in the text**, like `<warmly>`, and that way of reading holds
+  until the next tag, so one text can change its manner in the middle; the server turns a tag into a
+  bracketed stage direction for Gemini, and the tags are never counted as words nor read aloud. The field
+  under the pills is a direction for the whole text instead.
+  SAY IT always answers: an empty text, no voice, an empty ring, a refused key each say why in the feedback
+  line. The last voice, language, speed and way are kept in `audio/settings.json` between sessions; the
+  first start speaks English with Sulafat at 150 words a minute.
 - **ARCHIVE**: everything said, newest first, each with its own deck (save is the download), SAY AGAIN
   (puts the text, the way and the voice back on the SAY tab) and DELETE. The files are
   `audio/<date>_<voice>_<words>.wav`, the list `audio/index.json`. The same text in the same voice
