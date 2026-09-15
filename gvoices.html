@@ -52,7 +52,14 @@ textarea { min-height: 96px; }
 .big:disabled, .dimmed { opacity: .35; pointer-events: none; }
 .player { margin-top: 12px; border: 1px solid var(--line); border-radius: 12px; padding: 10px; background: var(--surface-2); }
 .player audio { width: 100%; margin-top: 6px; }
-.player .who { color: var(--dim); font-size: 11px; }
+.player .who { color: var(--dim); font-size: 11px; min-height: 16px; }
+.prog { display: flex; align-items: center; gap: 8px; font-size: 12px; min-height: 20px; }
+.spin { width: 14px; height: 14px; flex: none; border-radius: 50%; border: 2px solid var(--line); border-top-color: var(--amber); opacity: 0; }
+.spin.on { opacity: 1; animation: spin .9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.bar { height: 3px; width: 100%; background: var(--line); border-radius: 2px; margin: 6px 0; overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--amber); transition: width .4s linear; }
+.bar i.done { background: var(--green); }
 .acts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
 .btn { border: 1px solid var(--line); background: var(--surface-2); color: var(--prose); border-radius: 999px; padding: 8px 14px;
   font: 11px var(--mono); letter-spacing: .04em; cursor: pointer; text-decoration: none; display: inline-block; }
@@ -67,6 +74,15 @@ textarea { min-height: 96px; }
 .keys .name { flex: 1; min-width: 120px; }
 .keys .v { font-size: 11px; width: 100%; color: var(--dim); }
 .v.working, .v.valid { color: var(--green); } .v.spent, .v.busy { color: var(--amber); } .v.refused { color: var(--red); }
+.fold { border: 1px solid var(--line); border-radius: 12px; margin-top: 10px; background: var(--surface-2); }
+.foldhead { width: 100%; display: flex; align-items: center; gap: 10px; background: none; border: none; color: var(--prose);
+  padding: 12px 12px; font: 700 12px var(--mono); letter-spacing: .08em; cursor: pointer; text-align: left; }
+.foldhead .arrow { color: var(--amber); width: 12px; flex: none; }
+.foldhead .ft { flex: none; }
+.foldhead .fs { flex: 1; min-width: 0; color: var(--amber); font-weight: 400; letter-spacing: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.foldbody { display: none; padding: 0 12px 12px; }
+.fold.open .foldbody { display: block; }
+.fold.open .arrow { transform: rotate(90deg); display: inline-block; }
 .hidden-input { position: absolute; left: -9999px; }
 .empty { color: var(--dim); font-size: 12px; padding: 8px 0; }
 .foot { margin-top: 14px; color: var(--dim); font-size: 11px; text-align: center; }
@@ -91,17 +107,32 @@ textarea { min-height: 96px; }
   <div class="panel on" id="panel-say">
     <label class="lbl">THE TEXT</label>
     <textarea id="text" placeholder="what the voice says…"></textarea>
-    <label class="lbl">HOW (optional: slowly, warmly, whispering, like a newsreader…)</label>
-    <input type="text" id="style" placeholder="say it slowly and warmly">
-    <div class="filters" id="filters"></div>
-    <div class="voices" id="voices"></div>
-    <button class="big" id="say">SAY IT</button>
     <div class="player" id="player">
-      <div class="who" id="who">nothing said yet</div>
+      <div class="prog" id="prog"><span class="spin" id="spin"></span><span id="progtext">nothing said yet</span></div>
+      <div class="bar"><i id="barfill"></i></div>
+      <div class="who" id="who"></div>
       <audio id="audio" controls preload="none"></audio>
       <div class="acts"><a class="btn dimmed" id="download" href="#" download>DOWNLOAD WAV</a></div>
+      <div class="status" id="status"></div>
     </div>
-    <div class="status" id="status"></div>
+    <!-- HOW and VOICE fold away (Marko, 15.9.2026: "collapsible so they don't take much of the real estate ... chooses
+         its way of expressing and its voice, and then this can be collapsed") -->
+    <div class="fold" id="fold-how">
+      <button class="foldhead" data-fold="how"><span class="arrow">▸</span><span class="ft">HOW</span><span class="fs" id="how-summary">plain</span></button>
+      <div class="foldbody">
+        <div class="filters" id="how-pills"></div>
+        <label class="lbl">IN YOUR OWN WORDS (the pills write here; edit freely)</label>
+        <input type="text" id="style" placeholder="say it slowly and warmly">
+      </div>
+    </div>
+    <div class="fold" id="fold-voice">
+      <button class="foldhead" data-fold="voice"><span class="arrow">▸</span><span class="ft">VOICE</span><span class="fs" id="voice-summary">none chosen</span></button>
+      <div class="foldbody">
+        <div class="filters" id="filters"></div>
+        <div class="voices" id="voices"></div>
+      </div>
+    </div>
+    <button class="big" id="say">SAY IT</button>
   </div>
 
   <!-- ARCHIVE -->
@@ -160,6 +191,52 @@ textarea { min-height: 96px; }
     });
   });
 
+  // ------------------------------------------------------------ the folds
+  function setFold(name, open) {
+    $('fold-' + name).classList.toggle('open', open);
+    try { localStorage.setItem('gv.fold.' + name, open ? '1' : '0'); } catch (e) {}
+  }
+  document.querySelectorAll('.foldhead').forEach(function (b) {
+    b.addEventListener('click', function () { setFold(b.dataset.fold, !$('fold-' + b.dataset.fold).classList.contains('open')); });
+  });
+
+  // ------------------------------------------------------------ HOW: the ways of saying it, combinable
+  // Prose directions Gemini follows (gemini-speech.md: the direction is prose in the prompt; [whispers]-style tags
+  // are the newer model's). Grouped so a mood, a pace, a volume and a role combine: "warmly, slowly, whispering,
+  // like a storyteller".
+  var HOW = [
+    ['MOOD', ['warmly', 'cheerfully', 'excitedly', 'playfully', 'tenderly', 'lovingly', 'sadly', 'wistfully', 'angrily', 'fearfully', 'calmly', 'seriously', 'solemnly', 'mysteriously', 'sarcastically', 'bored', 'hopefully', 'proudly', 'nervously', 'gratefully']],
+    ['PACE', ['very slowly', 'slowly', 'at an easy pace', 'briskly', 'quickly', 'very fast', 'with long pauses', 'without pauses', 'measured, word by word']],
+    ['VOLUME', ['whispering', 'softly', 'quietly', 'at a normal volume', 'loudly', 'shouting', 'breathy', 'under the breath']],
+    ['TONE', ['gently', 'firmly', 'confidently', 'sincerely', 'dramatically', 'deadpan', 'ironically', 'enthusiastically', 'reassuringly', 'authoritatively', 'humbly', 'tired', 'sleepy', 'energetic']],
+    ['AS', ['like a newsreader', 'like a storyteller', 'like a documentary narrator', 'like a teacher', 'like a sports commentator', 'like a meditation guide', 'like a radio host', 'like a poet reciting', 'like a friend on the phone', 'like a stage actor', 'like an audiobook narrator', 'like a flight announcement', 'like a coach', 'like a priest', 'like a child', 'like an old man', 'like an old woman', 'like a robot', 'singing the words']],
+    ['SOUNDS', ['laughing between sentences', 'with a sigh first', 'clearing the throat first', 'with a chuckle', 'crying', 'yawning', 'gasping']]
+  ];
+  function howWords() { return $('style').value.split(',').map(function (x) { return x.trim(); }).filter(Boolean); }
+  function renderHow() {
+    var have = howWords(), html = '';
+    HOW.forEach(function (g) {
+      html += '<div class="frow"><span class="tag">' + g[0] + '</span>';
+      g[1].forEach(function (w) { html += '<button class="pill small' + (have.indexOf(w) >= 0 ? ' on' : '') + '" data-how="' + esc(w) + '">' + esc(w.toUpperCase()) + '</button>'; });
+      html += '</div>';
+    });
+    $('how-pills').innerHTML = html;
+    document.querySelectorAll('#how-pills .pill').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var w = b.dataset.how, words = howWords(), i = words.indexOf(w);
+        if (i >= 0) words.splice(i, 1); else words.push(w);
+        $('style').value = words.join(', ');
+        try { localStorage.setItem('gv.style', $('style').value); } catch (e) {}
+        api('/api/settings', { json: { style: $('style').value } }).catch(function () {});
+        renderHow();
+      });
+    });
+    $('how-summary').textContent = have.length ? have.join(', ') : 'plain';
+  }
+  var styleTimer = null;
+  $('style').addEventListener('input', function () { try { localStorage.setItem('gv.style', $('style').value); } catch (e) {} renderHow();
+    clearTimeout(styleTimer); styleTimer = setTimeout(function () { api('/api/settings', { json: { style: $('style').value } }).catch(function () {}); }, 600); });
+
   // ------------------------------------------------------------ the filters and the voices
   function renderFilters() {
     var f = S.state.facets, html = '';
@@ -190,34 +267,71 @@ textarea { min-height: 96px; }
     });
     $('voices').innerHTML = html;
     document.querySelectorAll('#voices .voice').forEach(function (b) {
-      b.addEventListener('click', function () { S.voice = b.dataset.v; try { localStorage.setItem('gv.voice', S.voice); } catch (e) {} renderVoices(); });
+      b.addEventListener('click', function () { S.voice = b.dataset.v; try { localStorage.setItem('gv.voice', S.voice); } catch (e) {} api('/api/settings', { json: { voice: S.voice } }).catch(function () {}); renderVoices(); });
     });
-    $('say').disabled = !S.voice || S.busy;
+    $('say').disabled = S.busy;
+    var v = S.state.voices.filter(function (x) { return x.name === S.voice; })[0];
+    $('voice-summary').textContent = v ? (v.name + ' · ' + v.gender + ' · ' + v.character) : 'none chosen';
   }
 
   // ------------------------------------------------------------ say
   function showItem(it, note) {
-    $('who').textContent = it.voice + ' · ' + it.model + ' · ' + it.key + ' · ' + it.seconds + ' s' + (note ? ' · ' + note : '');
+    $('who').textContent = it.voice + ' · ' + it.model + ' · ' + it.key + ' · ' + it.seconds + ' s of speech' + (it.took ? ' · took ' + it.took + ' s' : '') + (note ? ' · ' + note : '');
     $('audio').src = '/audio/' + encodeURIComponent(it.file);
     $('download').href = '/audio/' + encodeURIComponent(it.file) + '?download=1';
     $('download').setAttribute('download', it.file);
     $('download').classList.remove('dimmed');
     $('audio').play().catch(function () {});
   }
+  // THE ESTIMATE: seconds of speech ≈ words / 2.6; Google takes about 1.8 × the speech length (gemini-speech.md),
+  // corrected by what the archive measured (took / seconds of the last sentences), plus two seconds of the road.
+  function estimate(text) {
+    var words = text.split(/\s+/).filter(Boolean).length;
+    var speech = Math.max(1, words / 2.6);
+    var ratios = (S.state.archive || []).filter(function (it) { return it.took && it.seconds; }).slice(0, 8).map(function (it) { return it.took / it.seconds; });
+    var ratio = ratios.length ? ratios.sort(function (a, b) { return a - b; })[Math.floor(ratios.length / 2)] : 1.8;
+    return Math.round(speech * ratio + 2);
+  }
+  var poll = null, t0 = 0, est = 0;
+  function tick() {
+    var el = (Date.now() - t0) / 1000;
+    $('progtext').textContent = 'working… ' + el.toFixed(0) + ' s of about ' + est + ' s' + (el > est ? ' (Google is slower than the estimate, still waiting)' : '');
+    $('barfill').style.width = Math.min(96, 100 * el / est) + '%';
+    api('/api/progress').then(function (p) {
+      if (p.lines && p.lines.length) $('status').textContent = p.lines.map(function (l, i) { return (i + 1) + '. ' + l; }).join('\n');
+    }).catch(function () {});
+  }
   $('say').addEventListener('click', function () {
     var text = $('text').value.trim();
-    if (!text || !S.voice || S.busy) return;
+    if (S.busy) return;
+    function why(msg) { $('spin').classList.remove('on'); $('barfill').className = ''; $('barfill').style.width = '100%'; $('barfill').style.background = 'var(--red)'; $('progtext').textContent = 'no voice: ' + msg; $('status').className = 'status err'; $('status').textContent = ''; }
+    if (!text) { why('nothing to say, the text box is empty'); $('text').focus(); return; }
+    if (!S.voice) { why('no voice chosen, open VOICE and pick one'); setFold('voice', true); return; }
+    if (!(S.state.ring || []).length) { why('the ring is empty, on the KEYS tab choose the file with your Google keys'); return; }
     S.busy = true; $('say').disabled = true; $('say').textContent = 'ASKING GOOGLE…';
-    $('status').className = 'status'; $('status').textContent = 'one key at a time, the first in the ring';
+    est = estimate(text); t0 = Date.now();
+    $('spin').classList.add('on'); $('barfill').className = ''; $('barfill').style.width = '2%';
+    $('progtext').textContent = 'sending ' + text.split(/\s+/).filter(Boolean).length + ' words to ' + S.voice + '… about ' + est + ' s';
+    $('status').className = 'status'; $('status').textContent = '1. one key at a time, the first in the ring';
+    $('who').textContent = '';
+    poll = setInterval(tick, 500);
     api('/api/say', { json: { text: text, voice: S.voice, style: $('style').value } }).then(function (r) {
-      S.busy = false; $('say').disabled = false; $('say').textContent = 'SAY IT';
+      clearInterval(poll); S.busy = false; $('say').disabled = false; $('say').textContent = 'SAY IT';
+      $('spin').classList.remove('on');
+      var took = ((Date.now() - t0) / 1000).toFixed(1);
       if (r.ring) S.state.ring = r.ring;
-      if (!r.ok) { $('status').className = 'status err'; $('status').textContent = r.error + '\n' + (r.log || []).join('\n'); renderRing(); return; }
-      $('status').textContent = (r.log || []).join('\n');
-      showItem(r.item, r.cached ? 'cached, nothing spent' : 'new');
+      if (!r.ok) {
+        $('barfill').style.width = '100%'; $('barfill').style.background = 'var(--red)';
+        $('progtext').textContent = 'no voice: ' + r.error + ' (' + took + ' s)';
+        $('status').className = 'status err'; $('status').textContent = (r.log || []).map(function (l, i) { return (i + 1) + '. ' + l; }).join('\n'); renderRing(); return;
+      }
+      $('barfill').style.width = '100%'; $('barfill').className = 'done'; $('barfill').style.background = '';
+      $('progtext').textContent = (r.cached ? 'from the archive, nothing spent' : 'the voice arrived') + ' · ' + took + ' s' + (r.cached ? '' : ' (estimated ' + est + ' s)');
+      $('status').textContent = (r.log || []).map(function (l, i) { return (i + 1) + '. ' + l; }).join('\n');
+      showItem(r.item, r.cached ? 'cached' : 'new');
       if (!r.cached) { S.state.archive.unshift(r.item); }
       renderArchive(); renderRing();
-    }).catch(function (e) { S.busy = false; $('say').disabled = false; $('say').textContent = 'SAY IT'; $('status').className = 'status err'; $('status').textContent = 'the server does not answer: ' + e; });
+    }).catch(function (e) { clearInterval(poll); S.busy = false; $('say').disabled = false; $('say').textContent = 'SAY IT'; $('spin').classList.remove('on'); $('progtext').textContent = 'the server does not answer'; $('status').className = 'status err'; $('status').textContent = String(e); });
   });
 
   // ------------------------------------------------------------ archive
@@ -241,8 +355,9 @@ textarea { min-height: 96px; }
       b.addEventListener('click', function () {
         var it = items.filter(function (x) { return x.id === b.dataset.again; })[0];
         if (!it) return;
-        $('text').value = it.text; $('style').value = it.style || ''; S.voice = it.voice; renderVoices();
+        $('text').value = it.text; $('style').value = it.style || ''; S.voice = it.voice; renderHow(); renderVoices();
         document.querySelector('.tabs button[data-tab=say]').click();
+        $('progtext').textContent = 'from the archive'; $('barfill').className = 'done'; $('barfill').style.width = '100%';
         showItem(it, 'from the archive');
       });
     });
@@ -304,9 +419,14 @@ textarea { min-height: 96px; }
     $('ver').textContent = 'v' + st.version + ' · ' + st.voices.length + ' voices · port ' + st.port;
     $('curl-termux').textContent = st.install.termux; $('curl-mac').textContent = st.install.mac;
     $('repo').innerHTML = '<a class="btn" href="' + st.repo + '" target="_blank" rel="noopener">GITHUB</a>';
-    try { S.voice = localStorage.getItem('gv.voice') || null; } catch (e) {}
+    S.voice = (st.settings && st.settings.voice) || null;          // the server remembers between sessions; the first start is Sulafat
     if (S.voice && !st.voices.some(function (v) { return v.name === S.voice; })) S.voice = null;
-    renderFilters(); renderVoices(); renderArchive(); renderRing();
+    $('style').value = (st.settings && st.settings.style) || '';
+    renderHow(); renderFilters(); renderVoices(); renderArchive(); renderRing();
+    var fh = null, fv = null;
+    try { fh = localStorage.getItem('gv.fold.how'); fv = localStorage.getItem('gv.fold.voice'); } catch (e) {}
+    setFold('how', fh === '1');
+    setFold('voice', fv === null ? !S.voice : fv === '1');
     try { var t = localStorage.getItem('gv.tab'); if (t) { var b = document.querySelector('.tabs button[data-tab=' + t + ']'); if (b) b.click(); } } catch (e) {}
     if (window.MantraReader && window.MantraReader.attach) { /* READ buttons come with reader.js when the voice is up */ }
   }).catch(function (e) { $('status').className = 'status err'; $('status').textContent = 'the server does not answer: ' + e; });

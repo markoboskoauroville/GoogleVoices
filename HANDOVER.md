@@ -1,6 +1,6 @@
 # HANDOVER, the state of GVoices
 
-v1 · https://github.com/markoboskoauroville/GoogleVoices (public) · no artefact, the updater pulls main
+v2 · https://github.com/markoboskoauroville/GoogleVoices (public) · no artefact, the updater pulls main
 The reasons are in DEVELOPMENT.md; what it cost is in LESSONS.md.
 
 ## WHAT IT IS
@@ -12,8 +12,9 @@ and a keyring manager over `keys/gvoice.keys` in the app folder. Built 15.9.2026
 Never a model name in the page. Both answered on 15.9.2026 with 24 kHz mono PCM.
 
 ## THE SCREENS
-SAY (text, way, filters, voices, SAY IT, player, download, the walk) · ARCHIVE · KEYS. The install
-lines with COPY are at the top of the page.
+SAY (text; the player with the spinner, the estimate, the live walk of the ring, the audio, download; the HOW fold of
+combinable pills; the VOICE fold with the filters and the thirty voices; SAY IT) · ARCHIVE · KEYS. The install lines
+with COPY are at the top of the page. The last voice and way live in audio/settings.json; the first start is Sulafat.
 
 ## THE DANGEROUS PARTS, NOW
 - `ring.to_bottom` rewrites the key file whole (`.new` + rename, chmod 600); the `#` header lines survive.

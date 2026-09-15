@@ -1,6 +1,6 @@
 # the keys live only on this machine (MANIFEST_INTRO: a key is never committed)
 keys/
-# what the voices said, and the cache of it
+# what the voices said, the cache of it, and the settings
 audio/
 .venv/
 __pycache__/

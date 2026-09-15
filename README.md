@@ -28,10 +28,15 @@ also stand at the top of the page, each with a COPY button.
 
 ## The page
 
-- **SAY**: the text, an optional way of saying it ("slowly and warmly", "whispering", "like a
-  newsreader"; Gemini takes it as prose before the text), the filter rows, the thirty voices, SAY IT.
-  The player and DOWNLOAD WAV are always there; they become active when a sentence has been said.
-  Under them, the walk of the ring: which key answered, which model, cached or new.
+- **SAY**: the text, and right under it the player with the feedback: a spinner while Google works, the
+  seconds so far against an estimate (the length of the speech times what the last sentences measured),
+  the walk of the ring as it happens (which key, which model, waiting, to the bottom, answered), then
+  the audio, DOWNLOAD WAV, and what it cost. Two folds under the player, each with its choice on its
+  header so they can stay closed: **HOW**, pills that combine (mood, pace, volume, tone, "as", sounds)
+  into a prose direction before the text, editable in your own words; **VOICE**, the filter rows and the
+  thirty voices. SAY IT always answers: an empty text, no voice, an empty ring, a refused key each say
+  why in the feedback line. The last voice and way are kept in `audio/settings.json` between sessions;
+  the first start speaks with Sulafat.
 - **ARCHIVE**: everything said, newest first, each with its own player, DOWNLOAD WAV, SAY AGAIN
   (puts the text, the way and the voice back on the SAY tab) and DELETE. The files are
   `audio/<date>_<voice>_<words>.wav`, the list `audio/index.json`. The same text in the same voice

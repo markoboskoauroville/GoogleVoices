@@ -21,6 +21,13 @@
 - **Waitress, not the dev server**, on both paths of the console (the tty one and the no-tty one); Flask's own
   server only when waitress is missing, and it says so.
 
+- **The feedback is polled, not pushed.** (15.9.2026) The walk of the ring is written to PROGRESS as it happens and
+  the page asks /api/progress every half second while a sentence is out; simpler than a stream on waitress, and the
+  console's one thread per request stays free. The estimate is the speech length (words / 2.6) times the median of
+  took / seconds over the last eight sentences in the archive, 1.8 before anything is measured, plus two seconds.
+- **The voice and the way are the server's memory**, audio/settings.json, so a new browser or the phone's Chrome
+  finds them; localStorage only mirrors. The first start is Sulafat (warm), a choice, not Google's.
+
 ## THE BUGS
 
 - (15.9.2026, building) The pty test read the key row before the console had printed it, then looked for
@@ -34,6 +41,7 @@
 | v | date | what |
 |---|---|---|
 | 1 | 15.9.2026 | born: thirty voices, the ring, the archive, both installers, the four tests, the gates |
+| 2 | 15.9.2026 | the player under the text box with the spinner, the estimate and the live walk (/api/progress); HOW as combinable pills in a fold, VOICE in a fold; SAY IT says why when it cannot; the last voice and way on the server, Sulafat the first time |
 
 ## WHAT WAS INHERITED
 console.py, portpick.py, localguard.py, selfupdate.py from MAHA_TRANSCRIBE_TERMUX_TERMINAL (v5); the request,

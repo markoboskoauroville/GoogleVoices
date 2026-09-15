@@ -160,12 +160,13 @@ def say(text, voice, style="", poster=post, sleeper=time.sleep, log=None):
     for label, key, pos, of in ring.walk():
         tired = None                               # the verdict that sends this key to the bottom
         for model in MODELS:
+            tell("key %d of %d (%s): sending to %s" % (pos, of, label, model))
             code, body, headers = poster(model, payload(body_text, voice), key)
             v, why = verdict(code, body, headers)
             if v == "busy":
                 wait = retry_after(body, headers) or 10
                 if wait <= MAX_WAIT:
-                    tell("key %d of %d, %s: %s; waiting" % (pos, of, model, why))
+                    tell("key %d of %d, %s: %s; waiting %d s, then asking again" % (pos, of, model, why, wait))
                     sleeper(wait)
                     code, body, headers = poster(model, payload(body_text, voice), key)
                     v, why = verdict(code, body, headers)

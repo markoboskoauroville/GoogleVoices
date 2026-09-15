@@ -41,6 +41,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 APP_FILE = "gvoices.html"
 AUDIO_DIR = os.path.join(HERE, "audio")
 INDEX = os.path.join(AUDIO_DIR, "index.json")
+SETTINGS = os.path.join(AUDIO_DIR, "settings.json")   # the last voice and way, kept between sessions (Marko, 15.9.2026)
+DEFAULT_VOICE = "Sulafat"                              # the first start's voice: warm, female, in Google's words
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 8 * 1024 * 1024
@@ -51,6 +53,13 @@ SAID_COUNT = 0
 LIVE_PORT = DEFAULT_PORT          # the port ACTUALLY bound; localguard checks the Host header against it
 _say_lock = threading.Lock()      # one sentence at a time: never two keys in flight (Marko: no parallel)
 _index_lock = threading.Lock()
+# THE PROGRESS (Marko, 15.9.2026: "verbose feedback what's going on with the spinner so I know it's working and the
+# time estimate"): the walk of the ring as it happens, polled by the page every half second while a sentence is asked.
+PROGRESS = {"busy": False, "started": None, "lines": [], "text": "", "voice": ""}
+
+
+def progress_line(s):
+    PROGRESS["lines"].append({"at": time.time(), "text": s})
 
 
 @app.before_request
@@ -93,8 +102,43 @@ def api_state():
             "mac": "curl -fsSL https://raw.githubusercontent.com/markoboskoauroville/GoogleVoices/main/install-terminal.sh | bash",
         },
         "voices": voices.catalogue(), "facets": voices.facets(), "models": speech.MODELS,
-        "ring": ring.public(), "removed": ring.removed(), "archive": read_index(),
+        "ring": ring.public(), "removed": ring.removed(), "archive": read_index(), "settings": read_settings(),
     })
+
+
+# ---------------------------------------------------------------- the settings
+def read_settings():
+    try:
+        with open(SETTINGS) as f:
+            d = json.load(f)
+        if not isinstance(d, dict):
+            d = {}
+    except (OSError, ValueError):
+        d = {}
+    if not voices.is_voice(d.get("voice") or ""):
+        d["voice"] = DEFAULT_VOICE
+    d.setdefault("style", "")
+    return d
+
+
+def write_settings(d):
+    os.makedirs(AUDIO_DIR, exist_ok=True)
+    tmp = SETTINGS + ".new"
+    with open(tmp, "w") as f:
+        json.dump(d, f, indent=1)
+    os.replace(tmp, SETTINGS)
+
+
+@app.route("/api/settings", methods=["POST"])
+def api_settings():
+    d = request.get_json(silent=True) or {}
+    cur = read_settings()
+    if voices.is_voice(d.get("voice") or ""):
+        cur["voice"] = d["voice"]
+    if "style" in d:
+        cur["style"] = str(d["style"])[:400]
+    write_settings(cur)
+    return jsonify({"ok": True, "settings": cur})
 
 
 # ---------------------------------------------------------------- the archive
@@ -128,15 +172,24 @@ def api_say():
     voice = d.get("voice") or ""
     style = (d.get("style") or "").strip()
     if not text:
-        return jsonify({"ok": False, "error": "nothing to say"}), 400
+        return jsonify({"ok": False, "error": "nothing to say: the text box is empty"}), 400
     if not voices.is_voice(voice):
-        return jsonify({"ok": False, "error": "unknown voice %r" % voice}), 400
+        return jsonify({"ok": False, "error": "no voice chosen: open VOICE and pick one" if not voice else "unknown voice %r" % voice}), 400
+    if not ring.load():
+        return jsonify({"ok": False, "error": "the ring is empty: on the KEYS tab choose the file with your Google keys"}), 400
     fp = speech.fingerprint(text, voice, style)
     for it in read_index():                       # the same sentence in the same voice is not spent twice
         if it.get("fp") == fp and os.path.exists(os.path.join(AUDIO_DIR, it["file"])):
             return jsonify({"ok": True, "item": it, "cached": True, "log": ["cached: said before, nothing spent"]})
     with _say_lock:
-        r = speech.say(text, voice, style)
+        PROGRESS.update({"busy": True, "started": time.time(), "lines": [], "text": text, "voice": voice})
+        progress_line("asking Google with the first key of the ring, %s" % voice)
+        try:
+            r = speech.say(text, voice, style, log=progress_line)
+        finally:
+            progress_line("Google answered" if r.get("ok") else "no answer")
+            PROGRESS["busy"] = False
+    took = round(time.time() - PROGRESS["started"], 1)
     if not r["ok"]:
         return jsonify({"ok": False, "error": r["error"], "log": r["log"], "ring": ring.public()}), 502
     os.makedirs(AUDIO_DIR, exist_ok=True)
@@ -146,13 +199,20 @@ def api_say():
         f.write(r["wav"])
     item = {"id": stamp + "-" + fp[:6], "file": fname, "text": text, "style": style, "voice": voice,
             "model": r["model"], "key": "%s, key %d of %d" % (r["label"], r["pos"], r["of"]),
-            "seconds": round(r["seconds"], 1), "bytes": len(r["wav"]), "at": int(time.time()), "fp": fp}
+            "seconds": round(r["seconds"], 1), "bytes": len(r["wav"]), "at": int(time.time()), "fp": fp, "took": took}
     with _index_lock:
         items = read_index()
         items.insert(0, item)
         write_index(items)
     SAID_COUNT += 1
     return jsonify({"ok": True, "item": item, "cached": False, "log": r["log"], "ring": ring.public()})
+
+
+@app.route("/api/progress")
+def api_progress():
+    """What is happening right now: busy, seconds so far, the lines of the walk."""
+    return jsonify({"busy": PROGRESS["busy"], "elapsed": (time.time() - PROGRESS["started"]) if PROGRESS["started"] else 0,
+                    "lines": [l["text"] for l in PROGRESS["lines"]], "text": PROGRESS["text"], "voice": PROGRESS["voice"]})
 
 
 @app.route("/audio/<path:name>")
