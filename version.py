@@ -14,6 +14,7 @@ v8 (15.9.2026): LANGUAGE, English or Croatian, asked of the voice in the prompt,
 v9 (15.9.2026): tags in the text: a HOW pill inserts <its words> at the cursor; the model reads them as directions.
 v10 (15.9.2026): the documents for the language and the tags.
 v11 (15.9.2026): the tags measured in the audio.
+v12 (15.9.2026): the gear at the upper right holds the archive, the keys and the install lines; GEN is the first cell of the deck and SAY IT is gone.
 """
 
-APP_VERSION = 11
+APP_VERSION = 12

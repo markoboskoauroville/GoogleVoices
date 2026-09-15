@@ -52,6 +52,15 @@
   heard, not only obeyed on paper: "<cheerfully> Good morning Marko. <whispering> And now the secret part." came back
   with its first half at −14.0 dB mean and its whispered half at −17.0 dB, three decibels quieter, in one take.
 
+- **GEN is a cell of the deck, not a button above it.** (15.9.2026) Marko: "to generate the voice user needs to simply
+  press the play button ... gen button is the first button in the play. We generate, play plays." One row of six cells
+  now, gen first, and the big SAY IT is gone. gen keeps its colour and its click while the deck is idle, which is the
+  Streamlit deck's own lesson written the other way round: there, play had to stay live because play was what started
+  the making; here that job is gen's, so gen is the exception to the idle dimming and play is not.
+- **A canvas measured while hidden has no width.** (15.9.2026) The archive's decks are built inside the gear's panel,
+  which is display:none until the gear is pressed; their canvases came out zero wide. Every view change now redraws
+  the decks it just revealed, on the next tick.
+
 ## THE BUGS
 
 - (15.9.2026) "The app is not working, I don't get any voices." Driven in his Chrome: it worked; the voice arrived in
@@ -70,6 +79,7 @@
 | v | date | what |
 |---|---|---|
 | 1 | 15.9.2026 | born: thirty voices, the ring, the archive, both installers, the four tests, the gates |
+| 12 | 15.9.2026 | the gear at the upper right holds the archive, the keys and the install lines; GEN is the first cell of the deck, SAY IT is gone |
 | 11 | 15.9.2026 | the tags measured in the audio (−14.0 dB cheerful, −17.0 dB whispered) |
 | 10 | 15.9.2026 | the documents for the language and the tags |
 | 9 | 15.9.2026 | tags in the text: a HOW pill inserts <its words> at the cursor, the model reads them as bracketed directions |

@@ -24,17 +24,18 @@ macOS or Linux terminal:
 Then `gvoice` (or `gvoices`, both work). The page opens in the browser (Chrome on the phone). In the terminal: **q** quit,
 **o** open the page again, **u** check for an update (shows installed and available, `y` pulls and
 restarts on the same port), **r** restart. `gvoice update` pulls without starting. Both install lines
-also stand at the top of the page, each with a COPY button.
+also stand behind the gear on the page, under INSTALL, each with a COPY button.
 
 ## The page
 
-- **SAY**: the text, and right under it the player with the feedback: a spinner while Google works, the
-  seconds so far against an estimate (the words at the chosen pace, times what the last sentences measured),
-  the walk of the ring as it happens (which key, which model, waiting, to the bottom, answered), then
-  the deck, and what it cost. The deck is the waveform player of Maha Transcribe Streamlit, built once and
-  placed under the text box and in every archive card: a black scope with the peaks, the spoken part in
-  amber, a red playhead, the clock on the right, pages of ten seconds turned at once, and five cells,
-  play, stop, back and next (five seconds), save (the WAV).
+- **THE PAGE** is the text and its player; everything else lives behind the gear at the upper right.
+  Type, press **gen**, the first cell of the player: it asks Google, and when the voice arrives it plays.
+  Play plays it again, stop, back and next move five seconds, save writes the WAV. gen stays live when the
+  player is empty, because gen is what fills it; the other cells dim until there is something to play.
+  Above the player the feedback: a spinner while Google works, the seconds so far against an estimate,
+  the walk of the ring as it happens (which key, which model, waiting, to the bottom, answered), and then
+  what it cost. The player is the waveform deck of Maha Transcribe Streamlit: a black scope with the peaks,
+  the spoken part in amber, a red playhead, the clock on the right, pages of ten seconds turned at once.
   Under the player, two rows and two folds. **LANGUAGE**: English or Croatian, asked of the voice in the
   prompt so the accent and the pronunciation are that language's own; all thirty voices speak both.
   **SPEED**: one of seven paces, very slow (90) to very fast (220 words a minute), asked of the voice
@@ -47,19 +48,21 @@ also stand at the top of the page, each with a COPY button.
   until the next tag, so one text can change its manner in the middle; the server turns a tag into a
   bracketed stage direction for Gemini, and the tags are never counted as words nor read aloud. The field
   under the pills is a direction for the whole text instead.
-  SAY IT always answers: an empty text, no voice, an empty ring, a refused key each say why in the feedback
+  gen always answers: an empty text, no voice, an empty ring, a refused key each say why in the feedback
   line. The last voice, language, speed and way are kept in `audio/settings.json` between sessions; the
   first start speaks English with Sulafat at 150 words a minute.
-- **ARCHIVE**: everything said, newest first, each with its own deck (save is the download), SAY AGAIN
-  (puts the text, the way and the voice back on the SAY tab) and DELETE. The files are
+- **THE GEAR**, upper right, holds three things and closes again with the same press:
+  **ARCHIVE**: everything said, newest first, each with its own deck (save is the download), SAY AGAIN
+  (puts the text, the way and the voice back on the page) and DELETE. The files are
   `audio/<date>_<voice>_<words>.wav`, the list `audio/index.json`. The same text in the same voice
   with the same way is never asked twice: the archive answers, nothing is spent.
-- **KEYS**: CHOOSE A KEYS FILE… opens the system file picker; the file is read for keys by shape
+  **KEYS**: CHOOSE A KEYS FILE… opens the system file picker; the file is read for keys by shape
   (a name on one line, the key on the next, the shape of Marko's notes), and every new key is
   appended to `keys/gvoice.keys` (chmod 600). Or paste a note. TEST asks Google's models list with
   one key (valid or refused; nothing is spent), TEST ALL does that one key after another. TO THE
   BOTTOM moves a key by hand. DELETE moves it to `keys/removed.keys`, PUT BACK brings it back.
   The page shows a name, a position ("key 3 of 21") and a verdict, never a key or a mask.
+  **INSTALL**: the two curl lines with COPY, and the two commands, `gvoice` and `gvoice update`.
 
 ## The voices, and the filters
 

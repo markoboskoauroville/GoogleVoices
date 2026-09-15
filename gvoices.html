@@ -36,6 +36,11 @@ h1 { font-size: 13px; letter-spacing: .12em; margin: 0; color: var(--amber); fon
 .tabs button { flex: 1; }
 .tabs button.on, .pill.on { background: var(--amber); color: var(--bg); border-color: var(--amber); }
 .panel { display: none; } .panel.on { display: block; }
+.sub { display: none; } .sub.on { display: block; }
+.hr { display: flex; align-items: center; gap: 10px; }
+.gear { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; flex: none;
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; color: var(--prose); cursor: pointer; }
+.gear.on { background: var(--amber); border-color: var(--amber); color: var(--bg); }
 label.lbl { display: block; color: var(--dim); font-size: 11px; letter-spacing: .08em; margin: 10px 0 4px; }
 textarea, input[type=text] { width: 100%; background: var(--bg); color: var(--prose); border: 1px solid var(--line); border-radius: 10px;
   padding: 10px; font: 13px/1.5 var(--mono); resize: vertical; }
@@ -82,8 +87,13 @@ textarea { min-height: 96px; }
 .deck .key:first-child { border-radius: 3px 0 0 3px; }
 .deck .key.on { background: var(--amber); color: var(--bg); }
 .deck .gl { display: inline-flex; flex: none; } .deck .g { display: block; }
-.deck.idle .scopewrap, .deck.idle .row { opacity: .38; }        /* dimmed, not hidden: everything is already there */
-.deck.idle .row { pointer-events: none; }
+/* Dimmed, not hidden: everything is already there (design language 1). GEN STAYS LIVE WHEN THE DECK IS IDLE, because
+   gen is the cell that makes the audio: a dead gen is what teaches somebody the app is broken (the Streamlit deck's
+   own lesson about play). */
+.deck.idle .scopewrap { opacity: .38; }
+.deck.idle .row > :not([data-k=gen]) { opacity: .38; pointer-events: none; }
+.deck .key[data-k=gen] { background: var(--amber); color: var(--bg); font-weight: 700; }
+.deck .key[data-k=gen].working { background: var(--amber-lo); color: var(--prose); }
 .deck .msg { margin-top: 6px; min-height: 14px; font-size: 11px; color: #9aa3af; }
 .acts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
 .btn { border: 1px solid var(--line); background: var(--surface-2); color: var(--prose); border-radius: 999px; padding: 8px 14px;
@@ -115,18 +125,12 @@ textarea { min-height: 96px; }
 </head>
 <body>
 <div class="unit">
-  <div class="head"><h1>GVOICES</h1><small id="ver">Google's thirty voices</small></div>
-
-  <div class="install">
-    <div class="row"><span class="tag">TERMUX</span><code id="curl-termux">…</code><button class="btn" data-copy="curl-termux">COPY</button></div>
-    <div class="row"><span class="tag">MAC</span><code id="curl-mac">…</code><button class="btn" data-copy="curl-mac">COPY</button></div>
-  </div>
-
-  <div class="tabs">
-    <button data-tab="say" class="on">SAY</button>
-    <button data-tab="archive">ARCHIVE</button>
-    <button data-tab="keys">KEYS</button>
-  </div>
+  <!-- THE GEAR, upper right (Marko, 15.9.2026: "build a gear icon to the upper right corner, and in that gear icon
+       archive and keys are living. Also copy commands to install this application ... everything in settings"). -->
+  <div class="head"><h1>GVOICES</h1><div class="hr"><small id="ver">Google's thirty voices</small><button class="gear" id="gear" aria-label="settings" title="archive, keys, install">
+    <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <circle cx="12" cy="12" r="3.2"/><path d="M12 2.6v2.6M12 18.8v2.6M2.6 12h2.6M18.8 12h2.6M5.3 5.3l1.9 1.9M16.8 16.8l1.9 1.9M18.7 5.3l-1.9 1.9M7.2 16.8l-1.9 1.9"/>
+    </svg></button></div></div>
 
   <!-- SAY -->
   <div class="panel on" id="panel-say">
@@ -161,16 +165,21 @@ textarea { min-height: 96px; }
         <div class="voices" id="voices"></div>
       </div>
     </div>
-    <button class="big" id="say">SAY IT</button>
   </div>
 
-  <!-- ARCHIVE -->
-  <div class="panel" id="panel-archive">
+  <!-- EVERYTHING IN SETTINGS: the archive, the keys, and the install lines -->
+  <div class="panel" id="panel-settings">
+    <div class="tabs" id="settabs">
+      <button data-sub="archive" class="on">ARCHIVE</button>
+      <button data-sub="keys">KEYS</button>
+      <button data-sub="install">INSTALL</button>
+    </div>
+
+  <div class="sub on" id="sub-archive">
     <div id="archive"></div>
   </div>
 
-  <!-- KEYS -->
-  <div class="panel" id="panel-keys">
+  <div class="sub" id="sub-keys">
     <div class="acts">
       <button class="btn" id="pick">CHOOSE A KEYS FILE…</button>
       <input class="hidden-input" type="file" id="keyfile" accept=".txt,.keys,text/plain">
@@ -184,6 +193,21 @@ textarea { min-height: 96px; }
     <div class="keys" id="ring"></div>
     <label class="lbl">REMOVED (kept in keys/removed.keys)</label>
     <div class="keys" id="removed"></div>
+  </div>
+
+  <div class="sub" id="sub-install">
+    <label class="lbl">INSTALL GVOICES ON ANOTHER MACHINE: ONE LINE, NO TOKEN</label>
+    <div class="install">
+      <div class="row"><span class="tag">TERMUX</span><code id="curl-termux">…</code><button class="btn" data-copy="curl-termux">COPY</button></div>
+      <div class="row"><span class="tag">MAC</span><code id="curl-mac">…</code><button class="btn" data-copy="curl-mac">COPY</button></div>
+    </div>
+    <div class="install">
+      <div class="row"><span class="tag">START</span><code id="curl-start">gvoice</code><button class="btn" data-copy="curl-start">COPY</button></div>
+      <div class="row"><span class="tag">UPDATE</span><code id="curl-update">gvoice update</code><button class="btn" data-copy="curl-update">COPY</button></div>
+    </div>
+    <p class="empty">In the terminal where it runs: q quits, o opens this page again, u checks for an update, r restarts.
+      Your keys and your audio stay in this app's own folder on this machine and never go to GitHub.</p>
+  </div>
   </div>
 
   <div class="foot">the keys and the audio live only in this app's folder on this machine · <span id="repo"></span></div>
@@ -210,10 +234,12 @@ textarea { min-height: 96px; }
   // its slice); pages are even divisions under ten seconds; the page turn is instant, never a slide; back and
   // next are five seconds here (no sentence cues); save is the server's download link.
   var PAGE_SECONDS = 10, CLOCK_W = 96;
-  var G = { tri: '<svg class="g" viewBox="0 0 12 12" width="11" height="11"><path d="M2 1l9 5-9 5z" fill="currentColor"/></svg>', par: '<svg class="g" viewBox="0 0 12 12" width="11" height="11"><path d="M2 1h3v10H2zM7 1h3v10H7z" fill="currentColor"/></svg>', sq: '<svg class="g" viewBox="0 0 12 12" width="11" height="11"><rect x="1.5" y="1.5" width="9" height="9" fill="currentColor"/></svg>', bk: '<svg class="g" viewBox="0 0 12 12" width="11" height="11"><path d="M11 1v10L2 6z" fill="currentColor"/></svg>', fw: '<svg class="g" viewBox="0 0 12 12" width="11" height="11"><path d="M1 1v10l9-5z" fill="currentColor"/></svg>', dl: '<svg class="g" viewBox="0 0 12 12" width="11" height="11"><path d="M5 1h2v5h2.5L6 10 2.5 6H5z" fill="currentColor"/><rect x="1" y="10.5" width="10" height="1.5" fill="currentColor"/></svg>' };   // drawn, not fetched
-  function Deck(host) {
+  var G = { gen: '<svg class="g" viewBox="0 0 12 12" width="11" height="11"><rect x="1" y="4.5" width="2" height="3" fill="currentColor"/><rect x="5" y="1.5" width="2" height="9" fill="currentColor"/><rect x="9" y="3.5" width="2" height="5" fill="currentColor"/></svg>', tri: '<svg class="g" viewBox="0 0 12 12" width="11" height="11"><path d="M2 1l9 5-9 5z" fill="currentColor"/></svg>', par: '<svg class="g" viewBox="0 0 12 12" width="11" height="11"><path d="M2 1h3v10H2zM7 1h3v10H7z" fill="currentColor"/></svg>', sq: '<svg class="g" viewBox="0 0 12 12" width="11" height="11"><rect x="1.5" y="1.5" width="9" height="9" fill="currentColor"/></svg>', bk: '<svg class="g" viewBox="0 0 12 12" width="11" height="11"><path d="M11 1v10L2 6z" fill="currentColor"/></svg>', fw: '<svg class="g" viewBox="0 0 12 12" width="11" height="11"><path d="M1 1v10l9-5z" fill="currentColor"/></svg>', dl: '<svg class="g" viewBox="0 0 12 12" width="11" height="11"><path d="M5 1h2v5h2.5L6 10 2.5 6H5z" fill="currentColor"/><rect x="1" y="10.5" width="10" height="1.5" fill="currentColor"/></svg>' };   // drawn, not fetched
+  function Deck(host, opts) {
+    opts = opts || {};
+    var genCell = opts.gen ? '<button class="key" data-k="gen"><span class="gl">' + G.gen + '</span><span class="glbl">gen</span></button>' : '';
     host.innerHTML = '<div class="deck idle"><div class="scopewrap"><canvas></canvas><div class="page"></div><div class="clock">0:00</div></div>' +
-      '<div class="row"><button class="key" data-k="play"><span class="gl">' + G.tri + '</span><span class="lbl">play</span></button>' +
+      '<div class="row">' + genCell + '<button class="key" data-k="play"><span class="gl">' + G.tri + '</span><span class="lbl">play</span></button>' +
       '<button class="key" data-k="stop"><span class="gl">' + G.sq + '</span><span>stop</span></button>' +
       '<button class="key" data-k="back"><span class="gl">' + G.bk + '</span><span>back</span></button>' +
       '<button class="key" data-k="fwd"><span class="gl">' + G.fw + '</span><span>next</span></button>' +
@@ -268,7 +294,13 @@ textarea { min-height: 96px; }
     audio.onpause = function () { setPlaying(false); if (raf) { cancelAnimationFrame(raf); raf = null; } draw(); };
     audio.onended = function () { setPlaying(false); if (raf) { cancelAnimationFrame(raf); raf = null; } draw(); };
     window.addEventListener('resize', draw);
+    if (opts.gen) {
+      var bGen = root.querySelector('[data-k=gen]'), lGen = bGen.querySelector('.glbl');
+      bGen.onclick = function () { opts.gen(); };
+    }
     var deck = {
+      redraw: draw,
+      working: function (on) { if (!opts.gen) return; bGen.classList.toggle('working', !!on); lGen.textContent = on ? 'working…' : 'gen'; },
       load: function (url, name, autoplay) {
         src = url; audio.src = url; peaks = null; dur = 0;
         bSave.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'download=1'; bSave.setAttribute('download', name || 'gvoices.wav');
@@ -284,15 +316,25 @@ textarea { min-height: 96px; }
     setPlaying(false); fit(); draw();
     return deck;
   }
-  var mainDeck = Deck($('deck-main'));
+  var mainDeck = Deck($('deck-main'), { gen: function () { doGen(); } });
   var cardDecks = [];
 
-  // ------------------------------------------------------------ tabs
-  document.querySelectorAll('.tabs button').forEach(function (b) {
+  // ------------------------------------------------------------ the gear: everything else lives behind it
+  function showSettings(on) {
+    $('gear').classList.toggle('on', on);
+    $('panel-say').classList.toggle('on', !on);
+    $('panel-settings').classList.toggle('on', on);
+    try { localStorage.setItem('gv.settings', on ? '1' : '0'); } catch (e) {}
+    // a canvas measured while it was hidden has no width: draw again now that it is on screen
+    setTimeout(function () { if (on) cardDecks.forEach(function (d) { d.redraw(); }); else mainDeck.redraw(); }, 0);
+  }
+  $('gear').addEventListener('click', function () { showSettings(!$('gear').classList.contains('on')); });
+  document.querySelectorAll('#settabs button').forEach(function (b) {
     b.addEventListener('click', function () {
-      document.querySelectorAll('.tabs button').forEach(function (x) { x.classList.toggle('on', x === b); });
-      document.querySelectorAll('.panel').forEach(function (p) { p.classList.toggle('on', p.id === 'panel-' + b.dataset.tab); });
-      try { localStorage.setItem('gv.tab', b.dataset.tab); } catch (e) {}
+      document.querySelectorAll('#settabs button').forEach(function (x) { x.classList.toggle('on', x === b); });
+      document.querySelectorAll('#panel-settings .sub').forEach(function (p) { p.classList.toggle('on', p.id === 'sub-' + b.dataset.sub); });
+      try { localStorage.setItem('gv.sub', b.dataset.sub); } catch (e) {}
+      setTimeout(function () { cardDecks.forEach(function (d) { d.redraw(); }); }, 0);
     });
   });
   document.querySelectorAll('[data-copy]').forEach(function (b) {
@@ -409,7 +451,6 @@ textarea { min-height: 96px; }
     document.querySelectorAll('#voices .voice').forEach(function (b) {
       b.addEventListener('click', function () { S.voice = b.dataset.v; try { localStorage.setItem('gv.voice', S.voice); } catch (e) {} api('/api/settings', { json: { voice: S.voice } }).catch(function () {}); renderVoices(); });
     });
-    $('say').disabled = S.busy;
     var v = S.state.voices.filter(function (x) { return x.name === S.voice; })[0];
     $('voice-summary').textContent = v ? (v.name + ' · ' + v.gender + ' · ' + v.character) : 'none chosen';
   }
@@ -439,14 +480,16 @@ textarea { min-height: 96px; }
       if (p.lines && p.lines.length) $('status').textContent = p.lines.map(function (l, i) { return (i + 1) + '. ' + l; }).join('\n');
     }).catch(function () {});
   }
-  $('say').addEventListener('click', function () {
+  // GEN MAKES IT, PLAY PLAYS IT (Marko, 15.9.2026: "gen button is the first button in the play. We generate, play
+  // plays"). The old SAY IT is gone; gen is the first cell of the deck and is live even when nothing is loaded.
+  function doGen() {
     var text = $('text').value.trim();
     if (S.busy) return;
     function why(msg) { $('spin').classList.remove('on'); $('barfill').className = ''; $('barfill').style.width = '100%'; $('barfill').style.background = 'var(--red)'; $('progtext').textContent = 'no voice: ' + msg; $('status').className = 'status err'; $('status').textContent = ''; }
     if (!text) { why('nothing to say, the text box is empty'); $('text').focus(); return; }
     if (!S.voice) { why('no voice chosen, open VOICE and pick one'); setFold('voice', true); return; }
-    if (!(S.state.ring || []).length) { why('the ring is empty, on the KEYS tab choose the file with your Google keys'); return; }
-    S.busy = true; $('say').disabled = true; $('say').textContent = 'ASKING GOOGLE…';
+    if (!(S.state.ring || []).length) { why('the ring is empty: open the gear, KEYS, and choose the file with your Google keys'); return; }
+    S.busy = true; mainDeck.working(true);
     est = estimate(text); t0 = Date.now();
     $('spin').classList.add('on'); $('barfill').className = ''; $('barfill').style.width = '2%';
     $('progtext').textContent = 'sending ' + text.split(/\s+/).filter(Boolean).length + ' words to ' + S.voice + '… about ' + est + ' s';
@@ -454,7 +497,7 @@ textarea { min-height: 96px; }
     $('who').textContent = '';
     poll = setInterval(tick, 500);
     api('/api/say', { json: { text: text, voice: S.voice, style: $('style').value, speed: S.speed, language: S.language } }).then(function (r) {
-      clearInterval(poll); S.busy = false; $('say').disabled = false; $('say').textContent = 'SAY IT';
+      clearInterval(poll); S.busy = false; mainDeck.working(false);
       $('spin').classList.remove('on');
       var took = ((Date.now() - t0) / 1000).toFixed(1);
       if (r.ring) S.state.ring = r.ring;
@@ -469,8 +512,8 @@ textarea { min-height: 96px; }
       showItem(r.item, r.cached ? 'cached' : 'new');
       if (!r.cached) { S.state.archive.unshift(r.item); }
       renderArchive(); renderRing();
-    }).catch(function (e) { clearInterval(poll); S.busy = false; $('say').disabled = false; $('say').textContent = 'SAY IT'; $('spin').classList.remove('on'); $('barfill').style.width = '100%'; $('barfill').style.background = 'var(--red)'; gone(e); });
-  });
+    }).catch(function (e) { clearInterval(poll); S.busy = false; mainDeck.working(false); $('spin').classList.remove('on'); $('barfill').style.width = '100%'; $('barfill').style.background = 'var(--red)'; gone(e); });
+  }
 
   // ------------------------------------------------------------ archive
   function renderArchive() {
@@ -497,7 +540,7 @@ textarea { min-height: 96px; }
         var it = items.filter(function (x) { return x.id === b.dataset.again; })[0];
         if (!it) return;
         $('text').value = it.text; $('style').value = it.style || ''; S.voice = it.voice; if (it.speed) { S.speed = it.speed; renderSpeeds(); } if (it.language) { S.language = it.language; renderLanguages(); } renderHow(); renderVoices();
-        document.querySelector('.tabs button[data-tab=say]').click();
+        showSettings(false);
         $('progtext').textContent = 'from the archive'; $('barfill').className = 'done'; $('barfill').style.width = '100%';
         showItem(it, 'from the archive');
       });
@@ -571,7 +614,12 @@ textarea { min-height: 96px; }
     try { fh = localStorage.getItem('gv.fold.how'); fv = localStorage.getItem('gv.fold.voice'); } catch (e) {}
     setFold('how', fh === '1');
     setFold('voice', fv === null ? !S.voice : fv === '1');
-    try { var t = localStorage.getItem('gv.tab'); if (t) { var b = document.querySelector('.tabs button[data-tab=' + t + ']'); if (b) b.click(); } } catch (e) {}
+    $('curl-start').textContent = st.command || 'gvoice';
+    $('curl-update').textContent = (st.command || 'gvoice') + ' update';
+    var sub = null, settings = null;
+    try { sub = localStorage.getItem('gv.sub'); settings = localStorage.getItem('gv.settings'); } catch (e) {}
+    if (sub) { var sb = document.querySelector('#settabs button[data-sub=' + sub + ']'); if (sb) sb.click(); }
+    showSettings(settings === '1');
     if (window.MantraReader && window.MantraReader.attach) { /* READ buttons come with reader.js when the voice is up */ }
   }).catch(function (e) { gone(e); });
   // THE SERVER IS GONE (Marko, 15.9.2026, from a page left behind on port 8399 by a test copy that had quit): say which
