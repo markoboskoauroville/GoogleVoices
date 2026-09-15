@@ -150,23 +150,59 @@ def pace_words(speed):
     return "Speak at a %s pace, about %d words per minute, evenly, with natural pauses" % (name, speed)
 
 
-def prompt_of(text, style, speed=None):
-    """The direction is prose before the text (Gemini has no style field): 'Speak at ... . Say it slowly: ...'."""
+# THE LANGUAGE (Marko, 15.9.2026: "add to the languages also the accent spoken ... two, English and Croatian"): the
+# model would guess from the text; asked plainly, it keeps the accent and reads a foreign word the way that language
+# reads it. Every voice speaks every language (gemini-speech.md: the language belongs to the model, not the voice).
+LANGUAGES = [("en", "English", "Speak in English, with a native English accent"),
+             ("hr", "Croatian", "Speak in Croatian (hrvatski), with a native Croatian accent and Croatian pronunciation")]
+
+
+def language_words(code):
+    for c, _, words in LANGUAGES:
+        if c == code:
+            return words
+    return ""
+
+
+# TAGS IN THE TEXT (Marko, 15.9.2026: "insert that kind of tag ... between less than and greater than ... so I can
+# insert different emotions inside the block of text"): <warmly> in the text is a direction for what follows, until
+# the next tag. Gemini reads bracketed stage directions when told they are directions; so <warmly> becomes [warmly]
+# and the preamble says what brackets mean. The tags are never counted as words and never read aloud.
+TAG_RE = re.compile(r"<([^<>\n]{1,60})>")
+TAG_NOTE = "Words in square brackets are stage directions for how to read what follows them; never read them aloud"
+
+
+def tags_of(text):
+    return TAG_RE.findall(text or "")
+
+
+def strip_tags(text):
+    return TAG_RE.sub("", text or "")
+
+
+def prompt_of(text, style, speed=None, language=None):
+    """The direction is prose before the text (Gemini has no style field): 'Speak in ... . Speak at ... . warmly: ...'.
+    Tags in the text become bracketed directions, announced once."""
     style = (style or "").strip().rstrip(":.")
     text = (text or "").strip()
-    head = ". ".join([x for x in (pace_words(speed), style) if x])
+    parts = [language_words(language), pace_words(speed)]
+    if tags_of(text):
+        parts.append(TAG_NOTE)
+        text = TAG_RE.sub(lambda m: "[" + m.group(1).strip() + "]", text)
+    parts.append(style)
+    head = ". ".join([x for x in parts if x])
     return ("%s: %s" % (head, text)) if head else text
 
 
-def fingerprint(text, voice, style, speed=None):
-    return hashlib.sha256(("%s|%s|%s|%s" % (voice, style or "", speed or "", text)).encode()).hexdigest()[:16]
+def fingerprint(text, voice, style, speed=None, language=None):
+    return hashlib.sha256(("%s|%s|%s|%s|%s" % (voice, style or "", speed or "", language or "", text)).encode()).hexdigest()[:16]
 
 
 def words_of(text):
-    return len([w for w in (text or "").split() if w.strip()])
+    return len([w for w in strip_tags(text).split() if w.strip()])
 
 
-def say(text, voice, style="", poster=post, sleeper=time.sleep, log=None, speed=None):
+def say(text, voice, style="", poster=post, sleeper=time.sleep, log=None, speed=None, language=None):
     """Walk the ring, one key at a time, and return a dict:
        ok, wav (bytes), seconds, model, label, pos, of, log (the sentences of the walk).
     poster and sleeper are injectable for the tests (four-tests.md, test 1: the mechanism alone)."""
@@ -175,7 +211,7 @@ def say(text, voice, style="", poster=post, sleeper=time.sleep, log=None, speed=
         lines.append(s)
         if log:
             log(s)
-    body_text = prompt_of(text, style, speed)
+    body_text = prompt_of(text, style, speed, language)
     if not ring.load():
         return {"ok": False, "error": "the ring is empty: pick your keys file on the KEYS tab", "log": lines}
     for label, key, pos, of in ring.walk():

@@ -128,6 +128,12 @@ def test3_ugly():
     check(speech.prompt_of("hello", "warmly", 110).startswith("Speak at a slow pace, about 110 words per minute") and speech.prompt_of("hello", "warmly", 110).endswith(". warmly: hello"), "the pace goes first, in words per minute")
     check(speech.fingerprint("a", "Kore", "", 110) != speech.fingerprint("a", "Kore", "", 190), "two paces are two sentences in the cache")
     check(speech.words_of("  one two  three ") == 3, "words are counted")
+    check(speech.prompt_of("bok", "", None, "hr").startswith("Speak in Croatian") and speech.prompt_of("hi", "", 150, "en").startswith("Speak in English, with a native English accent. Speak at a natural pace"), "the language goes first, then the pace")
+    check(speech.fingerprint("a", "Kore", "", 150, "hr") != speech.fingerprint("a", "Kore", "", 150, "en"), "two languages are two sentences in the cache")
+    pr = speech.prompt_of("Hello <warmly> my friend <whispering> come closer", "", None, None)
+    check("[warmly]" in pr and "[whispering]" in pr and "<warmly>" not in pr and pr.startswith("Words in square brackets"), "tags become bracketed directions with the note first")
+    check(speech.words_of("Hello <warmly> my friend") == 3 and speech.tags_of("a <x> b <y z>") == ["x", "y z"], "tags are not words, and are listed")
+    check("[" not in speech.prompt_of("plain text", "", None, None), "no tags, no note")
     import voices
     check(len(voices.catalogue()) == 30 and not voices.is_voice("Nobody"), "thirty voices, and an unknown name is refused")
 

@@ -10,6 +10,8 @@ v4 (15.9.2026): the test copy never opens a browser; a dead page names its port 
 v5 (15.9.2026): gvoices as a second spelling of the command; README on a Mac whose output is BlackHole.
 v6 (15.9.2026): SPEED before generating, asked of the voice in words per minute, the pace that came back measured and shown.
 v7 (15.9.2026): the documents for the speed.
+v8 (15.9.2026): LANGUAGE, English or Croatian, asked of the voice in the prompt, remembered and shown.
+v9 (15.9.2026): tags in the text: a HOW pill inserts <its words> at the cursor; the model reads them as directions.
 """
 
-APP_VERSION = 7
+APP_VERSION = 9

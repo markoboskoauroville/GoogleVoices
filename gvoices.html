@@ -139,6 +139,8 @@ textarea { min-height: 96px; }
       <div id="deck-main"></div>
       <div class="status" id="status"></div>
     </div>
+    <!-- THE LANGUAGE (Marko, 15.9.2026): asked of the voice, every voice speaks every language -->
+    <div class="filters"><div class="frow"><span class="tag">LANGUAGE (asked of the voice; every voice speaks both)</span><span id="languages"></span></div></div>
     <!-- THE SPEED, before generating (Marko, 15.9.2026): asked of the model in words per minute, never stretched after -->
     <div class="filters"><div class="frow"><span class="tag">SPEED (asked of the voice, in words per minute; the pace that came back is measured and shown above)</span><span id="speeds"></span></div></div>
     <!-- HOW and VOICE fold away (Marko, 15.9.2026: "collapsible so they don't take much of the real estate ... chooses
@@ -146,8 +148,9 @@ textarea { min-height: 96px; }
     <div class="fold" id="fold-how">
       <button class="foldhead" data-fold="how"><span class="arrow">▸</span><span class="ft">HOW</span><span class="fs" id="how-summary">plain</span></button>
       <div class="foldbody">
+        <label class="lbl">A PILL INSERTS ITS TAG AT THE CURSOR IN THE TEXT, LIKE &lt;warmly&gt;: it holds until the next tag</label>
         <div class="filters" id="how-pills"></div>
-        <label class="lbl">IN YOUR OWN WORDS (the pills write here; edit freely)</label>
+        <label class="lbl">FOR THE WHOLE TEXT, IN YOUR OWN WORDS (optional)</label>
         <input type="text" id="style" placeholder="say it slowly and warmly">
       </div>
     </div>
@@ -199,6 +202,7 @@ textarea { min-height: 96px; }
     if (opts.json) { opts.body = JSON.stringify(opts.json); opts.headers['Content-Type'] = 'application/json'; opts.method = opts.method || 'POST'; }
     return fetch(path, opts).then(function (r) { return r.json().then(function (j) { j._http = r.status; return j; }); });
   }
+  function langName(c) { var l = (S.state.languages || []).filter(function (x) { return x[0] === c; })[0]; return l ? l[1] : c; }
   function when(t) { var d = new Date(t * 1000); return d.toLocaleDateString() + ' ' + d.toLocaleTimeString().slice(0, 5); }
 
   // ------------------------------------------------------------ THE DECK, built once, placed everywhere
@@ -308,6 +312,17 @@ textarea { min-height: 96px; }
     b.addEventListener('click', function () { setFold(b.dataset.fold, !$('fold-' + b.dataset.fold).classList.contains('open')); });
   });
 
+  // ------------------------------------------------------------ LANGUAGE: one of, radio
+  S.language = 'en';
+  function renderLanguages() {
+    var html = '';
+    (S.state.languages || []).forEach(function (l) { html += '<button class="pill small' + (S.language === l[0] ? ' on' : '') + '" data-lang="' + l[0] + '">' + l[1].toUpperCase() + '</button>'; });
+    $('languages').innerHTML = html;
+    document.querySelectorAll('#languages .pill').forEach(function (b) {
+      b.addEventListener('click', function () { S.language = b.dataset.lang; api('/api/settings', { json: { language: S.language } }).catch(function () {}); renderLanguages(); });
+    });
+  }
+
   // ------------------------------------------------------------ SPEED: one of, radio (design language 6)
   S.speed = 150;
   function renderSpeeds() {
@@ -331,9 +346,20 @@ textarea { min-height: 96px; }
     ['AS', ['like a newsreader', 'like a storyteller', 'like a documentary narrator', 'like a teacher', 'like a sports commentator', 'like a meditation guide', 'like a radio host', 'like a poet reciting', 'like a friend on the phone', 'like a stage actor', 'like an audiobook narrator', 'like a flight announcement', 'like a coach', 'like a priest', 'like a child', 'like an old man', 'like an old woman', 'like a robot', 'singing the words']],
     ['SOUNDS', ['laughing between sentences', 'with a sigh first', 'clearing the throat first', 'with a chuckle', 'crying', 'yawning', 'gasping']]
   ];
-  function howWords() { return $('style').value.split(',').map(function (x) { return x.trim(); }).filter(Boolean); }
+  // THE TAGS (Marko, 15.9.2026): a pill inserts <its words> at the cursor of the text box, so one text can change its
+  // way of reading in the middle; the header of the fold lists the tags the text holds, and the whole-text words.
+  function tagsInText() { var m = $('text').value.match(/<[^<>\n]{1,60}>/g) || []; return m.map(function (t) { return t.slice(1, -1); }); }
+  function insertTag(w) {
+    var ta = $('text'), v = ta.value, a = ta.selectionStart == null ? v.length : ta.selectionStart, b = ta.selectionEnd == null ? a : ta.selectionEnd;
+    var tag = '<' + w + '>', before = v.slice(0, a), after = v.slice(b);
+    var ins = (before && !/\s$/.test(before) ? ' ' : '') + tag + (after && !/^\s/.test(after) ? ' ' : '');
+    ta.value = before + ins + after;
+    var pos = (before + ins).length;
+    ta.focus(); ta.setSelectionRange(pos, pos);
+    renderHow();
+  }
   function renderHow() {
-    var have = howWords(), html = '';
+    var have = tagsInText(), html = '';
     HOW.forEach(function (g) {
       html += '<div class="frow"><span class="tag">' + g[0] + '</span>';
       g[1].forEach(function (w) { html += '<button class="pill small' + (have.indexOf(w) >= 0 ? ' on' : '') + '" data-how="' + esc(w) + '">' + esc(w.toUpperCase()) + '</button>'; });
@@ -341,17 +367,12 @@ textarea { min-height: 96px; }
     });
     $('how-pills').innerHTML = html;
     document.querySelectorAll('#how-pills .pill').forEach(function (b) {
-      b.addEventListener('click', function () {
-        var w = b.dataset.how, words = howWords(), i = words.indexOf(w);
-        if (i >= 0) words.splice(i, 1); else words.push(w);
-        $('style').value = words.join(', ');
-        try { localStorage.setItem('gv.style', $('style').value); } catch (e) {}
-        api('/api/settings', { json: { style: $('style').value } }).catch(function () {});
-        renderHow();
-      });
+      b.addEventListener('click', function () { insertTag(b.dataset.how); });
     });
-    $('how-summary').textContent = have.length ? have.join(', ') : 'plain';
+    var whole = $('style').value.trim();
+    $('how-summary').textContent = (have.length ? have.map(function (t) { return '<' + t + '>'; }).join(' ') : '') + (whole ? (have.length ? ' · ' : '') + whole : '') || 'plain';
   }
+  $('text').addEventListener('input', renderHow);
   var styleTimer = null;
   $('style').addEventListener('input', function () { try { localStorage.setItem('gv.style', $('style').value); } catch (e) {} renderHow();
     clearTimeout(styleTimer); styleTimer = setTimeout(function () { api('/api/settings', { json: { style: $('style').value } }).catch(function () {}); }, 600); });
@@ -395,8 +416,8 @@ textarea { min-height: 96px; }
 
   // ------------------------------------------------------------ say
   function showItem(it, note) {
-    $('who').textContent = it.voice + ' · ' + it.model + ' · ' + it.key + ' · ' + it.seconds + ' s of speech' + (it.took ? ' · took ' + it.took + ' s' : '') +
-      (it.wpm ? ' · pace: asked ' + it.speed + ', got ' + it.wpm + ' words/min' : '') + (note ? ' · ' + note : '');
+    $('who').textContent = it.voice + (it.tags && it.tags.length ? ' · tags: ' + it.tags.join(', ') : '') + ' · ' + it.model + ' · ' + it.key + ' · ' + it.seconds + ' s of speech' + (it.took ? ' · took ' + it.took + ' s' : '') +
+      (it.language ? ' · ' + langName(it.language) : '') + (it.wpm ? ' · pace: asked ' + it.speed + ', got ' + it.wpm + ' words/min' : '') + (note ? ' · ' + note : '');
     cardDecks.forEach(function (d) { d.pause(); });
     mainDeck.load('/audio/' + encodeURIComponent(it.file), it.file, true);
   }
@@ -432,7 +453,7 @@ textarea { min-height: 96px; }
     $('status').className = 'status'; $('status').textContent = '1. one key at a time, the first in the ring';
     $('who').textContent = '';
     poll = setInterval(tick, 500);
-    api('/api/say', { json: { text: text, voice: S.voice, style: $('style').value, speed: S.speed } }).then(function (r) {
+    api('/api/say', { json: { text: text, voice: S.voice, style: $('style').value, speed: S.speed, language: S.language } }).then(function (r) {
       clearInterval(poll); S.busy = false; $('say').disabled = false; $('say').textContent = 'SAY IT';
       $('spin').classList.remove('on');
       var took = ((Date.now() - t0) / 1000).toFixed(1);
@@ -457,7 +478,7 @@ textarea { min-height: 96px; }
     if (!items.length) html = '<div class="empty">nothing said yet</div>';
     items.forEach(function (it) {
       html += '<div class="card" data-id="' + esc(it.id) + '"><div class="t">' + esc(it.text) + '</div>' +
-        '<div class="m">' + esc(it.voice) + (it.style ? ' · ' + esc(it.style) : '') + (it.wpm ? ' · asked ' + it.speed + ', got ' + it.wpm + ' words/min' : '') + ' · ' + esc(it.model) + ' · ' + esc(it.key) + ' · ' + it.seconds + ' s · ' + when(it.at) + '</div>' +
+        '<div class="m">' + esc(it.voice) + (it.language ? ' · ' + esc(langName(it.language)) : '') + (it.style ? ' · ' + esc(it.style) : '') + (it.wpm ? ' · asked ' + it.speed + ', got ' + it.wpm + ' words/min' : '') + ' · ' + esc(it.model) + ' · ' + esc(it.key) + ' · ' + it.seconds + ' s · ' + when(it.at) + '</div>' +
         '<div class="deck-slot" data-file="' + esc(it.file) + '"></div>' +
         '<div class="acts"><button class="btn" data-again="' + esc(it.id) + '">SAY AGAIN</button><button class="btn warn" data-del="' + esc(it.id) + '">DELETE</button></div></div>';
     });
@@ -475,7 +496,7 @@ textarea { min-height: 96px; }
       b.addEventListener('click', function () {
         var it = items.filter(function (x) { return x.id === b.dataset.again; })[0];
         if (!it) return;
-        $('text').value = it.text; $('style').value = it.style || ''; S.voice = it.voice; if (it.speed) { S.speed = it.speed; renderSpeeds(); } renderHow(); renderVoices();
+        $('text').value = it.text; $('style').value = it.style || ''; S.voice = it.voice; if (it.speed) { S.speed = it.speed; renderSpeeds(); } if (it.language) { S.language = it.language; renderLanguages(); } renderHow(); renderVoices();
         document.querySelector('.tabs button[data-tab=say]').click();
         $('progtext').textContent = 'from the archive'; $('barfill').className = 'done'; $('barfill').style.width = '100%';
         showItem(it, 'from the archive');
@@ -543,7 +564,8 @@ textarea { min-height: 96px; }
     if (S.voice && !st.voices.some(function (v) { return v.name === S.voice; })) S.voice = null;
     $('style').value = (st.settings && st.settings.style) || '';
     S.speed = (st.settings && st.settings.speed) || 150;
-    renderSpeeds();
+    S.language = (st.settings && st.settings.language) || 'en';
+    renderLanguages(); renderSpeeds();
     renderHow(); renderFilters(); renderVoices(); renderArchive(); renderRing();
     var fh = null, fv = null;
     try { fh = localStorage.getItem('gv.fold.how'); fv = localStorage.getItem('gv.fold.voice'); } catch (e) {}

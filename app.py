@@ -102,6 +102,7 @@ def api_state():
             "mac": "curl -fsSL https://raw.githubusercontent.com/markoboskoauroville/GoogleVoices/main/install-terminal.sh | bash",
         },
         "voices": voices.catalogue(), "facets": voices.facets(), "models": speech.MODELS, "speeds": speech.SPEEDS,
+        "languages": [[c, n] for c, n, _ in speech.LANGUAGES],
         "ring": ring.public(), "removed": ring.removed(), "archive": read_index(), "settings": read_settings(),
     })
 
@@ -122,6 +123,8 @@ def read_settings():
         d["speed"] = max(60, min(300, int(d.get("speed") or 150)))
     except (TypeError, ValueError):
         d["speed"] = 150
+    if d.get("language") not in [c for c, _, _ in speech.LANGUAGES]:
+        d["language"] = "en"
     return d
 
 
@@ -146,6 +149,8 @@ def api_settings():
             cur["speed"] = max(60, min(300, int(d["speed"])))
         except (TypeError, ValueError):
             pass
+    if d.get("language") in [c for c, _, _ in speech.LANGUAGES]:
+        cur["language"] = d["language"]
     write_settings(cur)
     return jsonify({"ok": True, "settings": cur})
 
@@ -185,13 +190,16 @@ def api_say():
         speed = max(60, min(300, int(speed)))
     except (TypeError, ValueError):
         speed = 150
+    language = d.get("language") or read_settings().get("language") or "en"
+    if language not in [c for c, _, _ in speech.LANGUAGES]:
+        language = "en"
     if not text:
         return jsonify({"ok": False, "error": "nothing to say: the text box is empty"}), 400
     if not voices.is_voice(voice):
         return jsonify({"ok": False, "error": "no voice chosen: open VOICE and pick one" if not voice else "unknown voice %r" % voice}), 400
     if not ring.load():
         return jsonify({"ok": False, "error": "the ring is empty: on the KEYS tab choose the file with your Google keys"}), 400
-    fp = speech.fingerprint(text, voice, style, speed)
+    fp = speech.fingerprint(text, voice, style, speed, language)
     for it in read_index():                       # the same sentence in the same voice is not spent twice
         if it.get("fp") == fp and os.path.exists(os.path.join(AUDIO_DIR, it["file"])):
             return jsonify({"ok": True, "item": it, "cached": True, "log": ["cached: said before, nothing spent"]})
@@ -199,7 +207,7 @@ def api_say():
         PROGRESS.update({"busy": True, "started": time.time(), "lines": [], "text": text, "voice": voice})
         progress_line("asking Google with the first key of the ring, %s" % voice)
         try:
-            r = speech.say(text, voice, style, log=progress_line, speed=speed)
+            r = speech.say(text, voice, style, log=progress_line, speed=speed, language=language)
         finally:
             progress_line("Google answered" if r.get("ok") else "no answer")
             PROGRESS["busy"] = False
@@ -214,7 +222,7 @@ def api_say():
     item = {"id": stamp + "-" + fp[:6], "file": fname, "text": text, "style": style, "voice": voice,
             "model": r["model"], "key": "%s, key %d of %d" % (r["label"], r["pos"], r["of"]),
             "seconds": round(r["seconds"], 1), "bytes": len(r["wav"]), "at": int(time.time()), "fp": fp, "took": took,
-            "speed": speed, "words": speech.words_of(text),
+            "speed": speed, "language": language, "words": speech.words_of(text), "tags": speech.tags_of(text),
             "wpm": round(speech.words_of(text) * 60.0 / r["seconds"]) if r["seconds"] > 0 else None}
     with _index_lock:
         items = read_index()

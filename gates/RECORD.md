@@ -1,12 +1,12 @@
-# DELIVERY RECORD, gates run 15.09.2026 08:08
+# DELIVERY RECORD, gates run 15.09.2026 08:18
 
 - secrets: key shapes in the tree: 0
 - dead code: modules nobody imports: 0
 - dead code: routes nobody calls: 0
-- budget: page bytes: 42014
+- budget: page bytes: 44156
 - budget: requirements: 2
-- version: local: 7
-- version: origin/main: 6
+- version: local: 9
+- version: origin/main: 7
 
 ## Failed
 
