@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# `gvoice update`: pull the latest version and refresh the dependencies, then exit.
+# The U key inside the running app does the same and restarts on the same port.
+set -euo pipefail
+SOURCE="${BASH_SOURCE[0]}"
+while [ -L "$SOURCE" ]; do
+  DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+REPO_DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
+echo "updating gvoices..."
+cd "$REPO_DIR"
+if [[ ! -d .git ]]; then
+  echo "not a git checkout ($REPO_DIR has no .git), cannot self-update; run the install script instead"
+  exit 1
+fi
+git fetch --quiet origin
+LOCAL="$(git rev-parse @)"
+REMOTE="$(git rev-parse @{u})"
+if [[ "$LOCAL" == "$REMOTE" ]]; then echo "already up to date"; exit 0; fi
+git pull --ff-only
+PIP="$REPO_DIR/.venv/bin/pip"
+if [[ -x "$PIP" ]]; then
+  echo "refreshing dependencies..."; "$PIP" install --quiet -r "$REPO_DIR/requirements.txt"
+else
+  (command -v pip >/dev/null && pip install --quiet -r "$REPO_DIR/requirements.txt") || true
+fi
+echo "updated to v$(sed -n 's/^APP_VERSION *= *\([0-9]*\).*/\1/p' version.py); run gvoice again"

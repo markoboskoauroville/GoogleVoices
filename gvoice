@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# The `gvoice` command: starts GVoices (Google Voices). `gvoice update` pulls the latest version.
+# Copied from MAHA_TRANSCRIBE_TERMUX_TERMINAL's `transcribe` (the newest app with the floor).
+set -euo pipefail
+
+# resolve to the real repo directory even when this file is a symlink or a wrapper in PATH
+SOURCE="${GVOICE_HOME:-${BASH_SOURCE[0]}}"
+while [ -L "$SOURCE" ]; do
+  DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+if [[ -d "$SOURCE" ]]; then REPO_DIR="$SOURCE"; else REPO_DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"; fi
+
+if [[ "${1:-}" == "update" ]]; then
+  exec bash "$REPO_DIR/gvoice-update"
+fi
+
+# the python: the repo's venv on a Mac or Linux, Termux's own python on the phone
+PY="$REPO_DIR/.venv/bin/python"
+if [[ ! -x "$PY" ]]; then
+  PY="$(command -v python3 || command -v python || true)"
+fi
+if [[ -z "$PY" ]]; then echo "no python found, run the install script again"; exit 1; fi
+
+# the phone stays awake while the voices speak (termux-app.md); both silent when absent
+command -v termux-wake-lock >/dev/null 2>&1 && termux-wake-lock 2>/dev/null || true
+trap 'command -v termux-wake-unlock >/dev/null 2>&1 && termux-wake-unlock 2>/dev/null || true' EXIT
+
+PORT="${1:-8300}"
+exec "$PY" "$REPO_DIR/app.py" "$PORT"

@@ -1,0 +1,8 @@
+# the keys live only on this machine (MANIFEST_INTRO: a key is never committed)
+keys/
+# what the voices said, and the cache of it
+audio/
+.venv/
+__pycache__/
+*.pyc
+.DS_Store

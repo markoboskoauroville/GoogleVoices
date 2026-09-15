@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GVoices, Google Voices</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+/* AGY UI tokens (design-language.md, MAHA_TRANSCRIBE_TERMUX_TERMINAL): dark, amber, sand, mono */
+:root {
+  --bg: #0b0d10;  --surface: #0d1117;  --surface-2: #141a21;  --line: #23303d;
+  --amber: #f59e0b;  --amber-hi: #fbbf24;  --amber-lo: #b45309;
+  --prose: #f2ddb4;  --dim: #8a7a5c;  --red: #ef4444;  --green: #22c55e;
+  --mono: ui-monospace, "JetBrains Mono", "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--prose); font: 13px/1.5 var(--mono); }
+body { display: flex; justify-content: center; align-items: flex-start;
+       padding: calc(14px + env(safe-area-inset-top)) 8px calc(14px + env(safe-area-inset-bottom)); }
+.unit { width: 100%; max-width: 720px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+h1 { font-size: 13px; letter-spacing: .12em; margin: 0; color: var(--amber); font-weight: 700; }
+.head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.head small { color: var(--dim); }
+/* the install lines, at the top (Marko, 15.9.2026: "display in the top of that page the installation command with curl") */
+.install { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; margin-bottom: 12px; background: var(--surface-2); }
+.install .row { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+.install .tag { color: var(--dim); font-size: 11px; letter-spacing: .08em; width: 62px; flex: none; }
+.install code { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; color: var(--prose); font-size: 11px; padding: 4px 0; }
+.tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+.tabs button, .pill { border: 1px solid var(--line); background: var(--surface-2); color: var(--prose); border-radius: 999px;
+  padding: 10px 14px; font: 700 11px var(--mono); letter-spacing: .06em; cursor: pointer; }
+.tabs button { flex: 1; }
+.tabs button.on, .pill.on { background: var(--amber); color: var(--bg); border-color: var(--amber); }
+.panel { display: none; } .panel.on { display: block; }
+label.lbl { display: block; color: var(--dim); font-size: 11px; letter-spacing: .08em; margin: 10px 0 4px; }
+textarea, input[type=text] { width: 100%; background: var(--bg); color: var(--prose); border: 1px solid var(--line); border-radius: 10px;
+  padding: 10px; font: 13px/1.5 var(--mono); resize: vertical; }
+textarea { min-height: 96px; }
+.filters .frow { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 6px 0; }
+.filters .frow .tag { color: var(--dim); font-size: 11px; letter-spacing: .08em; width: 100%; }
+.pill { padding: 8px 12px; font-weight: 400; }
+.pill.small { padding: 6px 10px; font-size: 11px; }
+.voices { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; margin-top: 8px; }
+.voice { border: 1px solid var(--line); background: var(--surface-2); color: var(--prose); border-radius: 12px; padding: 8px 10px;
+  text-align: left; cursor: pointer; font: 13px var(--mono); }
+.voice .nm { font-weight: 700; }
+.voice .ch { color: var(--dim); font-size: 11px; }
+.voice.on { background: var(--amber); color: var(--bg); } .voice.on .ch { color: #3a2a06; }
+.voice.hid { opacity: .25; pointer-events: none; }          /* rule 1: nothing disappears, it becomes inactive */
+.big { width: 100%; padding: 16px; margin-top: 12px; background: var(--amber); color: var(--bg); border: none; border-radius: 14px;
+  font: 700 13px var(--mono); letter-spacing: .08em; cursor: pointer; }
+.big:disabled, .dimmed { opacity: .35; pointer-events: none; }
+.player { margin-top: 12px; border: 1px solid var(--line); border-radius: 12px; padding: 10px; background: var(--surface-2); }
+.player audio { width: 100%; margin-top: 6px; }
+.player .who { color: var(--dim); font-size: 11px; }
+.acts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.btn { border: 1px solid var(--line); background: var(--surface-2); color: var(--prose); border-radius: 999px; padding: 8px 14px;
+  font: 11px var(--mono); letter-spacing: .04em; cursor: pointer; text-decoration: none; display: inline-block; }
+.btn.warn { color: var(--red); }
+.status { margin-top: 10px; color: var(--dim); font-size: 11px; white-space: pre-wrap; }
+.status.err { color: var(--red); }
+.card { border: 1px solid var(--line); border-radius: 12px; padding: 10px; margin-bottom: 6px; background: var(--surface-2); }
+.card .t { font-size: 12px; } .card .m { color: var(--dim); font-size: 11px; }
+.card audio { width: 100%; margin-top: 6px; }
+.keys .card { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.keys .pos { color: var(--dim); font-size: 11px; width: 74px; flex: none; }
+.keys .name { flex: 1; min-width: 120px; }
+.keys .v { font-size: 11px; width: 100%; color: var(--dim); }
+.v.working, .v.valid { color: var(--green); } .v.spent, .v.busy { color: var(--amber); } .v.refused { color: var(--red); }
+.hidden-input { position: absolute; left: -9999px; }
+.empty { color: var(--dim); font-size: 12px; padding: 8px 0; }
+.foot { margin-top: 14px; color: var(--dim); font-size: 11px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="unit">
+  <div class="head"><h1>GVOICES</h1><small id="ver">Google's thirty voices</small></div>
+
+  <div class="install">
+    <div class="row"><span class="tag">TERMUX</span><code id="curl-termux">…</code><button class="btn" data-copy="curl-termux">COPY</button></div>
+    <div class="row"><span class="tag">MAC</span><code id="curl-mac">…</code><button class="btn" data-copy="curl-mac">COPY</button></div>
+  </div>
+
+  <div class="tabs">
+    <button data-tab="say" class="on">SAY</button>
+    <button data-tab="archive">ARCHIVE</button>
+    <button data-tab="keys">KEYS</button>
+  </div>
+
+  <!-- SAY -->
+  <div class="panel on" id="panel-say">
+    <label class="lbl">THE TEXT</label>
+    <textarea id="text" placeholder="what the voice says…"></textarea>
+    <label class="lbl">HOW (optional: slowly, warmly, whispering, like a newsreader…)</label>
+    <input type="text" id="style" placeholder="say it slowly and warmly">
+    <div class="filters" id="filters"></div>
+    <div class="voices" id="voices"></div>
+    <button class="big" id="say">SAY IT</button>
+    <div class="player" id="player">
+      <div class="who" id="who">nothing said yet</div>
+      <audio id="audio" controls preload="none"></audio>
+      <div class="acts"><a class="btn dimmed" id="download" href="#" download>DOWNLOAD WAV</a></div>
+    </div>
+    <div class="status" id="status"></div>
+  </div>
+
+  <!-- ARCHIVE -->
+  <div class="panel" id="panel-archive">
+    <div id="archive"></div>
+  </div>
+
+  <!-- KEYS -->
+  <div class="panel" id="panel-keys">
+    <div class="acts">
+      <button class="btn" id="pick">CHOOSE A KEYS FILE…</button>
+      <input class="hidden-input" type="file" id="keyfile" accept=".txt,.keys,text/plain">
+      <button class="btn" id="testall">TEST ALL</button>
+    </div>
+    <label class="lbl">OR PASTE A NOTE WITH KEYS</label>
+    <textarea id="paste" placeholder="a name on one line, the key on the next…"></textarea>
+    <div class="acts"><button class="btn" id="import-paste">ADD THESE</button></div>
+    <div class="status" id="kstatus"></div>
+    <label class="lbl">THE RING, IN ORDER OF USE (the first is in use; a refused one goes to the bottom)</label>
+    <div class="keys" id="ring"></div>
+    <label class="lbl">REMOVED (kept in keys/removed.keys)</label>
+    <div class="keys" id="removed"></div>
+  </div>
+
+  <div class="foot">the keys and the audio live only in this app's folder on this machine · <span id="repo"></span></div>
+</div>
+
+<script src="http://127.0.0.1:8837/reader.js" onerror="this.remove()"></script>
+<script>
+(function () {
+  'use strict';
+  var S = { state: null, voice: null, on: { gender: {}, character: {}, family: {} }, busy: false };
+  var $ = function (id) { return document.getElementById(id); };
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function api(path, opts) {
+    opts = opts || {};
+    opts.headers = Object.assign({ 'X-GVoices-Local': '1' }, opts.headers || {});
+    if (opts.json) { opts.body = JSON.stringify(opts.json); opts.headers['Content-Type'] = 'application/json'; opts.method = opts.method || 'POST'; }
+    return fetch(path, opts).then(function (r) { return r.json().then(function (j) { j._http = r.status; return j; }); });
+  }
+  function when(t) { var d = new Date(t * 1000); return d.toLocaleDateString() + ' ' + d.toLocaleTimeString().slice(0, 5); }
+
+  // ------------------------------------------------------------ tabs
+  document.querySelectorAll('.tabs button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.tabs button').forEach(function (x) { x.classList.toggle('on', x === b); });
+      document.querySelectorAll('.panel').forEach(function (p) { p.classList.toggle('on', p.id === 'panel-' + b.dataset.tab); });
+      try { localStorage.setItem('gv.tab', b.dataset.tab); } catch (e) {}
+    });
+  });
+  document.querySelectorAll('[data-copy]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var t = $(b.dataset.copy).textContent;
+      (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { b.textContent = 'COPIED'; setTimeout(function () { b.textContent = 'COPY'; }, 1500); },
+        function () { window.prompt('copy this line', t); });
+    });
+  });
+
+  // ------------------------------------------------------------ the filters and the voices
+  function renderFilters() {
+    var f = S.state.facets, html = '';
+    [['gender', 'GENDER (Google Cloud\'s table)'], ['character', 'CHARACTER (Google\'s one word for each voice)'], ['family', 'FAMILY (grouped here, not by Google)']].forEach(function (row) {
+      html += '<div class="frow"><span class="tag">' + row[1] + '</span>';
+      f[row[0]].forEach(function (v) {
+        html += '<button class="pill small' + (S.on[row[0]][v] ? ' on' : '') + '" data-f="' + row[0] + '" data-v="' + esc(v) + '">' + esc(v.toUpperCase()) + '</button>';
+      });
+      html += '</div>';
+    });
+    $('filters').innerHTML = html;
+    document.querySelectorAll('#filters .pill').forEach(function (b) {
+      b.addEventListener('click', function () { S.on[b.dataset.f][b.dataset.v] = !S.on[b.dataset.f][b.dataset.v]; renderFilters(); renderVoices(); });
+    });
+  }
+  function passes(v) {
+    return ['gender', 'character', 'family'].every(function (k) {
+      var picked = Object.keys(S.on[k]).filter(function (x) { return S.on[k][x]; });
+      return !picked.length || picked.indexOf(v[k]) >= 0;
+    });
+  }
+  function renderVoices() {
+    var html = '';
+    S.state.voices.forEach(function (v) {
+      var glyph = v.gender === 'female' ? '♀' : '♂';
+      html += '<button class="voice' + (S.voice === v.name ? ' on' : '') + (passes(v) ? '' : ' hid') + '" data-v="' + v.name + '">' +
+        '<div class="nm">' + glyph + ' ' + v.name + '</div><div class="ch">' + esc(v.character) + ' · ' + esc(v.family) + '</div></button>';
+    });
+    $('voices').innerHTML = html;
+    document.querySelectorAll('#voices .voice').forEach(function (b) {
+      b.addEventListener('click', function () { S.voice = b.dataset.v; try { localStorage.setItem('gv.voice', S.voice); } catch (e) {} renderVoices(); });
+    });
+    $('say').disabled = !S.voice || S.busy;
+  }
+
+  // ------------------------------------------------------------ say
+  function showItem(it, note) {
+    $('who').textContent = it.voice + ' · ' + it.model + ' · ' + it.key + ' · ' + it.seconds + ' s' + (note ? ' · ' + note : '');
+    $('audio').src = '/audio/' + encodeURIComponent(it.file);
+    $('download').href = '/audio/' + encodeURIComponent(it.file) + '?download=1';
+    $('download').setAttribute('download', it.file);
+    $('download').classList.remove('dimmed');
+    $('audio').play().catch(function () {});
+  }
+  $('say').addEventListener('click', function () {
+    var text = $('text').value.trim();
+    if (!text || !S.voice || S.busy) return;
+    S.busy = true; $('say').disabled = true; $('say').textContent = 'ASKING GOOGLE…';
+    $('status').className = 'status'; $('status').textContent = 'one key at a time, the first in the ring';
+    api('/api/say', { json: { text: text, voice: S.voice, style: $('style').value } }).then(function (r) {
+      S.busy = false; $('say').disabled = false; $('say').textContent = 'SAY IT';
+      if (r.ring) S.state.ring = r.ring;
+      if (!r.ok) { $('status').className = 'status err'; $('status').textContent = r.error + '\n' + (r.log || []).join('\n'); renderRing(); return; }
+      $('status').textContent = (r.log || []).join('\n');
+      showItem(r.item, r.cached ? 'cached, nothing spent' : 'new');
+      if (!r.cached) { S.state.archive.unshift(r.item); }
+      renderArchive(); renderRing();
+    }).catch(function (e) { S.busy = false; $('say').disabled = false; $('say').textContent = 'SAY IT'; $('status').className = 'status err'; $('status').textContent = 'the server does not answer: ' + e; });
+  });
+
+  // ------------------------------------------------------------ archive
+  function renderArchive() {
+    var items = S.state.archive || [], html = '';
+    if (!items.length) html = '<div class="empty">nothing said yet</div>';
+    items.forEach(function (it) {
+      html += '<div class="card" data-id="' + esc(it.id) + '"><div class="t">' + esc(it.text) + '</div>' +
+        '<div class="m">' + esc(it.voice) + (it.style ? ' · ' + esc(it.style) : '') + ' · ' + esc(it.model) + ' · ' + esc(it.key) + ' · ' + it.seconds + ' s · ' + when(it.at) + '</div>' +
+        '<audio controls preload="none" src="/audio/' + encodeURIComponent(it.file) + '"></audio>' +
+        '<div class="acts"><a class="btn" href="/audio/' + encodeURIComponent(it.file) + '?download=1" download="' + esc(it.file) + '">DOWNLOAD WAV</a>' +
+        '<button class="btn" data-again="' + esc(it.id) + '">SAY AGAIN</button><button class="btn warn" data-del="' + esc(it.id) + '">DELETE</button></div></div>';
+    });
+    $('archive').innerHTML = html;
+    document.querySelectorAll('#archive [data-del]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        api('/api/archive/' + encodeURIComponent(b.dataset.del), { method: 'DELETE' }).then(function (r) { S.state.archive = r.archive || []; renderArchive(); });
+      });
+    });
+    document.querySelectorAll('#archive [data-again]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var it = items.filter(function (x) { return x.id === b.dataset.again; })[0];
+        if (!it) return;
+        $('text').value = it.text; $('style').value = it.style || ''; S.voice = it.voice; renderVoices();
+        document.querySelector('.tabs button[data-tab=say]').click();
+        showItem(it, 'from the archive');
+      });
+    });
+  }
+
+  // ------------------------------------------------------------ keys
+  function renderRing() {
+    var ring = S.state.ring || [], html = '';
+    if (!ring.length) html = '<div class="empty">no keys yet: choose the file with your Google keys, a name on one line and the key on the next</div>';
+    ring.forEach(function (k) {
+      html += '<div class="card"><span class="pos">key ' + k.pos + ' of ' + k.of + (k.pos === 1 ? ' · IN USE' : '') + '</span><span class="name">' + esc(k.label) + '</span>' +
+        '<button class="btn" data-test="' + esc(k.label) + '">TEST</button><button class="btn" data-bottom="' + esc(k.label) + '">TO THE BOTTOM</button>' +
+        '<button class="btn warn" data-kdel="' + esc(k.label) + '">DELETE</button>' +
+        '<span class="v ' + esc(k.verdict) + '">' + esc(k.verdict) + (k.detail ? ' · ' + esc(k.detail) : '') + (k.at ? ' · ' + when(k.at) : '') + '</span></div>';
+    });
+    $('ring').innerHTML = html;
+    var rem = S.state.removed || [], rh = '';
+    if (!rem.length) rh = '<div class="empty">none removed</div>';
+    rem.forEach(function (l) { rh += '<div class="card"><span class="name">' + esc(l) + '</span><button class="btn" data-restore="' + esc(l) + '">PUT BACK</button></div>'; });
+    $('removed').innerHTML = rh;
+    var take = function (r) { if (r.ring) S.state.ring = r.ring; if (r.removed_names) S.state.removed = r.removed_names; renderRing(); };
+    document.querySelectorAll('#ring [data-test]').forEach(function (b) { b.addEventListener('click', function () {
+      b.textContent = 'TESTING…'; api('/api/keys/test', { json: { labels: [b.dataset.test] } }).then(function (r) { $('kstatus').textContent = (r.tested || []).map(function (t) { return t.label + ': ' + t.verdict + ', ' + t.detail; }).join('\n'); take(r); }); }); });
+    document.querySelectorAll('#ring [data-bottom]').forEach(function (b) { b.addEventListener('click', function () { api('/api/keys/bottom', { json: { label: b.dataset.bottom } }).then(take); }); });
+    document.querySelectorAll('#ring [data-kdel]').forEach(function (b) { b.addEventListener('click', function () { api('/api/keys/delete', { json: { labels: [b.dataset.kdel] } }).then(function (r) { $('kstatus').textContent = 'removed ' + r.removed + ', kept in keys/removed.keys'; take(r); }); }); });
+    document.querySelectorAll('#removed [data-restore]').forEach(function (b) { b.addEventListener('click', function () { api('/api/keys/restore', { json: { labels: [b.dataset.restore] } }).then(function (r) { $('kstatus').textContent = 'put back ' + r.added; take(r); }); }); });
+  }
+  function importResult(r) {
+    var s = 'added ' + r.added + ', already there ' + r.skipped + ', ring ' + r.total;
+    if (r.unknown && r.unknown.length) s += '\n' + r.unknown.length + ' long token(s) of a shape this app does not know, NOT imported: line ' + r.unknown.map(function (u) { return u.line; }).join(', ');
+    $('kstatus').textContent = s;
+    if (r.ring) S.state.ring = r.ring;
+    renderRing();
+  }
+  $('pick').addEventListener('click', function () { $('keyfile').click(); });
+  $('keyfile').addEventListener('change', function () {
+    var f = $('keyfile').files[0]; if (!f) return;
+    var fd = new FormData(); fd.append('keyfile', f, f.name);
+    $('kstatus').textContent = 'reading ' + f.name + ' (' + f.size + ' bytes)…';
+    api('/api/keys/import', { method: 'POST', body: fd }).then(importResult);
+    $('keyfile').value = '';
+  });
+  $('import-paste').addEventListener('click', function () {
+    var t = $('paste').value; if (!t.trim()) return;
+    api('/api/keys/import', { json: { text: t } }).then(function (r) { $('paste').value = ''; importResult(r); });
+  });
+  $('testall').addEventListener('click', function () {
+    $('testall').textContent = 'TESTING, ONE AFTER ANOTHER…';
+    api('/api/keys/test', { json: {} }).then(function (r) {
+      $('testall').textContent = 'TEST ALL';
+      $('kstatus').textContent = (r.tested || []).map(function (t) { return t.label + ': ' + t.verdict + ', ' + t.detail; }).join('\n');
+      if (r.ring) S.state.ring = r.ring; renderRing();
+    });
+  });
+
+  // ------------------------------------------------------------ start
+  api('/api/state').then(function (st) {
+    S.state = st;
+    $('ver').textContent = 'v' + st.version + ' · ' + st.voices.length + ' voices · port ' + st.port;
+    $('curl-termux').textContent = st.install.termux; $('curl-mac').textContent = st.install.mac;
+    $('repo').innerHTML = '<a class="btn" href="' + st.repo + '" target="_blank" rel="noopener">GITHUB</a>';
+    try { S.voice = localStorage.getItem('gv.voice') || null; } catch (e) {}
+    if (S.voice && !st.voices.some(function (v) { return v.name === S.voice; })) S.voice = null;
+    renderFilters(); renderVoices(); renderArchive(); renderRing();
+    try { var t = localStorage.getItem('gv.tab'); if (t) { var b = document.querySelector('.tabs button[data-tab=' + t + ']'); if (b) b.click(); } } catch (e) {}
+    if (window.MantraReader && window.MantraReader.attach) { /* READ buttons come with reader.js when the voice is up */ }
+  }).catch(function (e) { $('status').className = 'status err'; $('status').textContent = 'the server does not answer: ' + e; });
+})();
+</script>
+</body>
+</html>
