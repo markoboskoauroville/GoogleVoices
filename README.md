@@ -15,11 +15,15 @@ machine that runs it, never on GitHub.
 
 Termux (Android):
 
-    curl -fsSL https://raw.githubusercontent.com/markoboskoauroville/GoogleVoices/main/install-termux.sh | bash
+```sh
+curl -fsSL https://raw.githubusercontent.com/markoboskoauroville/GoogleVoices/main/install-termux.sh | bash
+```
 
 macOS or Linux terminal:
 
-    curl -fsSL https://raw.githubusercontent.com/markoboskoauroville/GoogleVoices/main/install-terminal.sh | bash
+```sh
+curl -fsSL https://raw.githubusercontent.com/markoboskoauroville/GoogleVoices/main/install-terminal.sh | bash
+```
 
 Then `gvoice` (or `gvoices`, both work). The page opens in the browser (Chrome on the phone). In the terminal: **q** quit,
 **o** open the page again, **u** check for an update (shows installed and available, `y` pulls and
@@ -93,21 +97,23 @@ sentence at a time, never two keys in flight.
 
 ## The files
 
-    app.py            the Flask routes: /api/state, /api/say, /audio/<file>, /api/archive/<id>, /api/keys/…
-    gvoices.html      the page, one file, the AGY look (dark, amber, sand, mono)
-    speech.py         one sentence to Google through the ring, the verdicts, PCM to WAV
-    ring.py           the key file, import by shape, to the bottom, delete and put back, the state
-    voices.py         the thirty voices with Google's gender and character, and our families
-    console.py        q o u r, plain lines, waitress (copied from MAHA_TRANSCRIBE_TERMUX_TERMINAL)
-    portpick.py       a port that never fails to open; ~/.mantra/ports/gvoice
-    localguard.py     127.0.0.1 only: Host, Origin, and the page's own header
-    selfupdate.py     the U key: fetch, compare version.py, pull --ff-only
-    version.py        one whole number
-    gvoice            the launcher (venv on a Mac, Termux's python on the phone; `gvoice update`)
-    gvoice-update     pull and refresh, then exit
-    install-terminal.sh, install-termux.sh
-    tests/run_all.py  the four tests (--real spends one request)
-    gates/run_gates.py, gates/RECORD.md
+```
+app.py            the Flask routes: /api/state, /api/say, /audio/<file>, /api/archive/<id>, /api/keys/…
+gvoices.html      the page, one file, the AGY look (dark, amber, sand, mono)
+speech.py         one sentence to Google through the ring, the verdicts, PCM to WAV
+ring.py           the key file, import by shape, to the bottom, delete and put back, the state
+voices.py         the thirty voices with Google's gender and character, and our families
+console.py        q o u r, plain lines, waitress (copied from MAHA_TRANSCRIBE_TERMUX_TERMINAL)
+portpick.py       a port that never fails to open; ~/.mantra/ports/gvoice
+localguard.py     127.0.0.1 only: Host, Origin, and the page's own header
+selfupdate.py     the U key: fetch, compare version.py, pull --ff-only
+version.py        one whole number
+gvoice            the launcher (venv on a Mac, Termux's python on the phone; `gvoice update`)
+gvoice-update     pull and refresh, then exit
+install-terminal.sh, install-termux.sh
+tests/run_all.py  the four tests (--real spends one request)
+gates/run_gates.py, gates/RECORD.md
+```
 
 Keys and audio are gitignored. `TAKEOVER.md` brings it back on a fresh machine, `LESSONS.md` is
 what it cost to learn, `HANDOVER.md` the state now, `DEVELOPMENT.md` the reasons.
